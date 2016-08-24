@@ -107,10 +107,11 @@ public class BotScriptEngine {
 		mod.sendAndLog(cc);
 	}
 	
-	private boolean ContainsJS() {
+	private boolean ContainsJS(String action) {
 		boolean containsJS = false;
 		try {
 			containsJS = mod.getDataArchive().getInputStream("ai-script.js") != null;
+			containsJS = containsJS && mod.getDataArchive().getInputStream(action.replaceAll("\\s","") + ".js") != null;
 		} catch (IOException e1) {}
 		return containsJS;
 	}
@@ -124,34 +125,26 @@ public class BotScriptEngine {
 	}
 	
 	public void RunScript(String jsonString, String action) {
-		if (ContainsJS()) {
+		boolean containsJS = ContainsJS(action);
+		if (containsJS) {
 			// try JS
 			RunJS(jsonString, action);
 		}
 		
-		if (ContainsPY()) {
+		if (!containsJS && ContainsPY()) {
 			// try Python
 			RunPython(jsonString);
 		}
 	}
 	
 	public void RunScript(Question reply) {
-		boolean containsJS = false;
-		try {
-			containsJS = mod.getDataArchive().getInputStream("ai-script.js") != null;
-		} catch (IOException e1) {}
-		
+		boolean containsJS = ContainsJS(reply.faction());
 		if (containsJS) {
 			// try JS
 			RunJS("", reply.faction(), reply);
 		}
 		
-		boolean containsPY = false;
-		try {
-			containsPY = mod.getDataArchive().getInputStream("ai-script.py") != null;
-		} catch (IOException e1) {}
-		
-		if (containsPY) {
+		if (!containsJS && ContainsPY()) {
 			// try Python
 			RunPython("", reply);
 		}
