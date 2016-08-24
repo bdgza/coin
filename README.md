@@ -2,8 +2,8 @@
 Java code for COIN VASSAL extensions to interface with a bot script.
 
 See:
-https://github.com/bdgza/ADPBot
-https://github.com/autonm/FS
++ https://github.com/bdgza/ADPBot
++ https://github.com/autonm/FS
 
 ### Dependencies
 
