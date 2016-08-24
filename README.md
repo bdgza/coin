@@ -5,6 +5,10 @@ See:
 https://github.com/bdgza/ADPBot
 https://github.com/autonm/FS
 
+### Dependencies
+
+Requires JSON Simple: https://github.com/fangyidong/json-simple
+
 ### Java
 
 These classes use the Java ScriptEngine for JavaScript available from Java SE 7 or later. This means these classes are not compatible with all versions of Java supported by VASSAL.
