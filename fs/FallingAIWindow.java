@@ -50,8 +50,7 @@ import VASSAL.tools.LaunchButton;
 import coin.*;
 
 /**
- * This is a copy of the NotesWindow in VASSAL with less elements in the UI
- * specifically suited to showing Scenario notes for Memoir '44
+ * This is a copy of the NotesWindow in VASSAL, could probably still be improved upon
  */
 public class FallingAIWindow extends AbstractConfigurable {
 	final GameModule mod = GameModule.getGameModule();
