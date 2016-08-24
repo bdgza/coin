@@ -18,3 +18,5 @@ These classes use the Java ScriptEngine for JavaScript available from Java SE 7 
 Some code has been taken from the VASSAL project and modified. The NoteWindow was taken as a base for the AI windows, to add a toolbar button to the VASSAL interface. Other classes are used unmodified.
 
 VASSAL is released under LGPL v2.1 or newer.
+
+http://www.vassalengine.org
