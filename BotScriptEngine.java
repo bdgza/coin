@@ -356,9 +356,9 @@ public class BotScriptEngine {
 		    					String faction = jsonObject.get("faction").toString();
 		    					String questionType = jsonObject.get("type").toString();
 		    					String q = jsonObject.get("q").toString();
-		    					String question = jsonObject.get("question").toString();
-		    					String datafile = jsonObject.get("datafile").toString();
-		    					String options = jsonObject.get("options").toString();
+		    					String question = (jsonObject.containsKey("question")) ? jsonObject.get("question").toString() : "?";
+		    					String datafile = (jsonObject.containsKey("datafile")) ? jsonObject.get("datafile").toString() : "";
+		    					String options = (jsonObject.containsKey("options")) ? jsonObject.get("options").toString() : "";
 		    					
 		    					_fireBotScriptEvent(new BotScriptEvent(this, BotScriptEvent.EVENTTYPE_QUESTION, new Question(faction, questionType, q, question, datafile, options)));
 		    				}
