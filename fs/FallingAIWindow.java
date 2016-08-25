@@ -107,29 +107,7 @@ public class FallingAIWindow extends AbstractConfigurable {
 			initComponents();
 			setLocationRelativeTo(getOwner());
 			
-			_botScriptEngine = new BotScriptEngine(mod);
-			
-			BotScriptListener listener = new BotScriptListener() {
-				public void botScriptEvent(BotScriptEvent event) {
-					if (event.eventType() == BotScriptEvent.EVENTTYPE_QUESTION) {
-						Question question = (Question) event.eventData();
-						WriteLine("# Please answer the question in the dialog: " + question.question());
-						YesNoDialog dlg = new YesNoDialog(GameModule.getGameModule().getFrame(), "Falling Sky AI", question);
-						final YesNoDialog myDlg = dlg;
-						final Question myQuestion = question;
-						dlg.addWindowListener(new WindowAdapter() {
-							public void windowDeactivated(WindowEvent e) {
-								if (myDlg.reply.length() > 0) {
-									myQuestion.setReply(myDlg.reply);
-									_botScriptEngine.RunScript(myQuestion);
-								}
-							}
-						});
-						dlg.setVisible(true);
-					}
-				}
-			};
-			_botScriptEngine.addBotScriptListener(listener);
+			_botScriptEngine = new BotScriptEngine(mod, "Falling Sky AI");
 		}
 		
 		private JButton makeButton(String name, GridBagLayout gridbag, GridBagConstraints c) {

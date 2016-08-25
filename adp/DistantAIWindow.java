@@ -291,7 +291,7 @@ public class DistantAIWindow extends AbstractConfigurable {
 		json.append("\"propaganda\": " + propCount + ", ");
 		json.append("\"action\": \"" + aiButtonName + "\", ");
 		
-		BotScriptEngine engine = new BotScriptEngine(mod);
+		BotScriptEngine engine = new BotScriptEngine(mod, "A Distant Plain AI");
 		String jsonString = engine.ConstructJSON(json, offboard, zones);
 
 //		WriteLine("JSON: " + jsonString);

@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.concurrent.TimeoutException;
 
 import javax.script.*;
+import javax.swing.JFrame;
+import javax.swing.JOptionPane;
 
 import org.apache.commons.io.IOUtils;
 
@@ -21,12 +23,66 @@ import org.json.simple.parser.*;
 
 
 public class BotScriptEngine {
-	private static GameModule mod;
+	private static GameModule _mod;
+	private static String _coinTitle;
 	private List<BotScriptListener> _listeners;
 	
-	public BotScriptEngine(GameModule module) {
-		mod = module;
+	public BotScriptEngine(GameModule module, String coinTitle) {
+		_mod = module;
+		_coinTitle = coinTitle;
 		_listeners = new ArrayList<BotScriptListener>();
+		final BotScriptEngine self = this;
+		
+		this.addBotScriptListener(new BotScriptListener() {
+			
+			public void botScriptEvent(BotScriptEvent event) {
+				if (event.eventType() == BotScriptEvent.EVENTTYPE_QUESTION) {
+					Question question = (Question) event.eventData();
+					WriteLine("# Please answer the question in the dialog: " + question.question());
+					
+					if (question.questionType().equals(Question.QUESTION_YESNO)) {
+						YesNoDialog dlg = new YesNoDialog(_mod.getFrame(), _coinTitle, question);
+						final YesNoDialog myDlg = dlg;
+						final Question myQuestion = question;
+						dlg.addWindowListener(new WindowAdapter() {
+							public void windowDeactivated(WindowEvent e) {
+								if (myDlg.reply.length() > 0) {
+									myQuestion.setReply(myDlg.reply);
+									self.RunScript(myQuestion);
+								}
+							}
+						});
+						dlg.setVisible(true);
+					} else if (question.questionType().equals(Question.QUESTION_SINGLECHOICE)) {
+						ListDialog dlg = new ListDialog(_mod.getFrame(), _coinTitle, question);
+						final ListDialog myDlg = dlg;
+						final Question myQuestion = question;
+						dlg.addWindowListener(new WindowAdapter() {
+							public void windowDeactivated(WindowEvent e) {
+								if (myDlg.reply.length() > 0) {
+									myQuestion.setReply(myDlg.reply);
+									self.RunScript(myQuestion);
+								}
+							}
+						});
+						dlg.setVisible(true);
+					} else if (question.questionType().equals(Question.QUESTION_MULTIPLECHOICE)) {
+						MultipleDialog dlg = new MultipleDialog(_mod.getFrame(), _coinTitle, question);
+						final MultipleDialog myDlg = dlg;
+						final Question myQuestion = question;
+						dlg.addWindowListener(new WindowAdapter() {
+							public void windowDeactivated(WindowEvent e) {
+								if (myDlg.reply.length() > 0) {
+									myQuestion.setReply(myDlg.reply);
+									self.RunScript(myQuestion);
+								}
+							}
+						});
+						dlg.setVisible(true);
+					}
+				}
+			}
+		});
 	}
 	
 	public synchronized void addBotScriptListener(BotScriptListener l) {
@@ -102,16 +158,16 @@ public class BotScriptEngine {
 			
 	private static void WriteLine(String msgLine) {
 		FormattedString cStr = new FormattedString("-<AI> " + msgLine);
-		final Command cc = new Chatter.DisplayText(mod.getChatter(), cStr.getLocalizedText());
+		final Command cc = new Chatter.DisplayText(_mod.getChatter(), cStr.getLocalizedText());
 		cc.execute();
-		mod.sendAndLog(cc);
+		_mod.sendAndLog(cc);
 	}
 	
 	private boolean ContainsJS(String action) {
 		boolean containsJS = false;
 		try {
-			containsJS = mod.getDataArchive().getInputStream("ai-script.js") != null;
-			containsJS = containsJS && mod.getDataArchive().getInputStream(action.replaceAll("\\s","") + ".js") != null;
+			containsJS = _mod.getDataArchive().getInputStream("ai-script.js") != null;
+			containsJS = containsJS && _mod.getDataArchive().getInputStream(action.replaceAll("\\s","") + ".js") != null;
 		} catch (IOException e1) {}
 		return containsJS;
 	}
@@ -119,7 +175,7 @@ public class BotScriptEngine {
 	private boolean ContainsPY() {
 		boolean containsPY = false;
 		try {
-			containsPY = mod.getDataArchive().getInputStream("ai-script.py") != null;
+			containsPY = _mod.getDataArchive().getInputStream("ai-script.py") != null;
 		} catch (IOException e1) {}
 		return containsPY;
 	}
@@ -141,12 +197,12 @@ public class BotScriptEngine {
 		boolean containsJS = ContainsJS(reply.faction());
 		if (containsJS) {
 			// try JS
-			RunJS("", reply.faction(), reply);
+			RunJS(null, reply.faction(), reply);
 		}
 		
 		if (!containsJS && ContainsPY()) {
 			// try Python
-			RunPython("", reply);
+			RunPython(null, reply);
 		}
 	}
 	
@@ -163,22 +219,22 @@ public class BotScriptEngine {
 		Reader readerAIScript = null;
 		
 		try {
-			readerJsonLib = new InputStreamReader(mod.getDataArchive().getInputStream("json2.js"));
+			readerJsonLib = new InputStreamReader(_mod.getDataArchive().getInputStream("json2.js"));
 			engine.eval(readerJsonLib);
 			
-			readerPolyfill = new InputStreamReader(mod.getDataArchive().getInputStream("polyfill.js"));
+			readerPolyfill = new InputStreamReader(_mod.getDataArchive().getInputStream("polyfill.js"));
 			engine.eval(readerPolyfill);
 			
-			readerPolyfill = new InputStreamReader(mod.getDataArchive().getInputStream("ai-tools.js"));
+			readerPolyfill = new InputStreamReader(_mod.getDataArchive().getInputStream("ai-tools.js"));
 			engine.eval(readerPolyfill);
 			
-			readerPolyfill = new InputStreamReader(mod.getDataArchive().getInputStream(action.replaceAll("\\s","") + ".js"));
+			readerPolyfill = new InputStreamReader(_mod.getDataArchive().getInputStream(action.replaceAll("\\s","") + ".js"));
 			engine.eval(readerPolyfill);
 			
 			engine.eval("inputString = '" + (reply == null ? jsonString : reply.datafile()) + "';");
 			engine.eval("reply = '" + reply.toJSONReply() + "';");
 			
-			readerAIScript = new InputStreamReader(mod.getDataArchive().getInputStream("ai-script.js"));
+			readerAIScript = new InputStreamReader(_mod.getDataArchive().getInputStream("ai-script.js"));
 			engine.eval(readerAIScript);
 			
 		} catch (ScriptException e1) {
@@ -231,15 +287,19 @@ public class BotScriptEngine {
 	private void RunPython(String jsonString, Question reply) {
 		final File scriptFile;
 		final File dataFile;
+		final File replyFile;
+		String scriptFilePath = "";
 		String dataFilePath = "";
+		String replyFilePath = "";
 		try {
 	        scriptFile = File.createTempFile("ai-script-", ".py");
 	        scriptFile.deleteOnExit();
-	        InputStreamReader in = new InputStreamReader(mod.getDataArchive().getInputStream("ai-script.py"));
+	        InputStreamReader in = new InputStreamReader(_mod.getDataArchive().getInputStream("ai-script.py"));
 	        FileOutputStream out = new FileOutputStream(scriptFile);
 	        IOUtils.copy(in, out);
+	        scriptFilePath = scriptFile.getPath();
 	        
-	        if (jsonString.length() > 0) {
+	        if (jsonString != null) {
 	        	dataFile = File.createTempFile("ai-script-", ".json");
 	        	dataFile.deleteOnExit();
 	        	PrintWriter sout = new PrintWriter(dataFile);
@@ -248,6 +308,13 @@ public class BotScriptEngine {
 	        	dataFilePath = dataFile.getPath();
 	        } else {
 	        	dataFilePath = reply.datafile();
+	        	
+	        	replyFile = File.createTempFile("ai-reply-", ".json");
+	        	replyFile.deleteOnExit();
+	        	PrintWriter sout = new PrintWriter(replyFile);
+	        	sout.write(reply.toJSONReply());
+	        	sout.close();
+	        	replyFilePath = replyFile.getPath();
 	        }
 	    }
 		catch (IOException ex) {
@@ -258,9 +325,9 @@ public class BotScriptEngine {
 		final ProcessWithTimeout pwt;
 		final Process p;
 		try {  
-			String commandline = "python " + scriptFile.getPath() + " " + dataFilePath + " true";
+			String commandline = "python " + scriptFilePath + " " + dataFilePath + " true";
 			if (reply != null) {
-				commandline += " " + reply.toJSONReply();
+				commandline += " " + replyFilePath;
 			}
 		    p = Runtime.getRuntime().exec(commandline);
 		    pwt = new ProcessWithTimeout(p);
@@ -287,11 +354,13 @@ public class BotScriptEngine {
 		    					JSONParser parser = new JSONParser();
 		    					JSONObject jsonObject = (JSONObject) parser.parse(line);
 		    					String faction = jsonObject.get("faction").toString();
+		    					String questionType = jsonObject.get("type").toString();
 		    					String q = jsonObject.get("q").toString();
 		    					String question = jsonObject.get("question").toString();
 		    					String datafile = jsonObject.get("datafile").toString();
+		    					String options = jsonObject.get("options").toString();
 		    					
-		    					_fireBotScriptEvent(new BotScriptEvent(this, BotScriptEvent.EVENTTYPE_QUESTION, new Question(faction, q, question, datafile)));
+		    					_fireBotScriptEvent(new BotScriptEvent(this, BotScriptEvent.EVENTTYPE_QUESTION, new Question(faction, questionType, q, question, datafile, options)));
 		    				}
 		    				catch (Exception ex)
 		    				{
