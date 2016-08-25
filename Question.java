@@ -60,6 +60,7 @@ public class Question {
 		JSONObject json = new JSONObject();
 		json.put("q", q());
 		json.put("faction", faction());
+		json.put("options", options());
 		json.put("reply", reply());
 		return json.toJSONString();
 	}
