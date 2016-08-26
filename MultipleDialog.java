@@ -21,6 +21,7 @@ public class MultipleDialog extends JDialog {
 		
 		String title = coinTitle + " – " + question.faction();
 		this.setTitle(title);
+		this.setMinimumSize(new Dimension(300, 80));
 		
 		if (parent != null) {
 			Dimension parentSize = parent.getSize();
