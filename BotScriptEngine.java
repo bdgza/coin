@@ -232,7 +232,7 @@ public class BotScriptEngine {
 			engine.eval(readerPolyfill);
 			
 			engine.eval("inputString = '" + (reply == null ? jsonString : reply.datafile()) + "';");
-			engine.eval("reply = '" + reply.toJSONReply() + "';");
+			if (reply != null) engine.eval("answer = '" + reply.toJSONReply().replaceAll("'", "\\'") + "';");
 			
 			readerAIScript = new InputStreamReader(_mod.getDataArchive().getInputStream("ai-script.js"));
 			engine.eval(readerAIScript);
@@ -275,7 +275,7 @@ public class BotScriptEngine {
 			String msgs = output.toString();
 			String[] msg = msgs.split("\n");
 			for (int i = 0; i < msg.length; i++) {
-				WriteLine(msg[i]);
+				processMessageLine(msg[i]);
 			}
 		}
 	}
@@ -348,28 +348,7 @@ public class BotScriptEngine {
 		    	String line = null;
 		    	try {
 		    		while ((line = reader.readLine()) != null) {
-		    			if (line.startsWith("{")) {
-		    				// this is probably a question
-		    				try {
-		    					JSONParser parser = new JSONParser();
-		    					JSONObject jsonObject = (JSONObject) parser.parse(line);
-		    					String faction = jsonObject.get("faction").toString();
-		    					String questionType = jsonObject.get("type").toString();
-		    					String q = jsonObject.get("q").toString();
-		    					String question = (jsonObject.containsKey("question")) ? jsonObject.get("question").toString() : "?";
-		    					String datafile = (jsonObject.containsKey("datafile")) ? jsonObject.get("datafile").toString() : "";
-		    					String options = (jsonObject.containsKey("options")) ? jsonObject.get("options").toString() : "";
-		    					
-		    					_fireBotScriptEvent(new BotScriptEvent(this, BotScriptEvent.EVENTTYPE_QUESTION, new Question(faction, questionType, q, question, datafile, options)));
-		    				}
-		    				catch (Exception ex)
-		    				{
-		    					WriteLine("JSON: " + ex.toString());
-		    					WriteLine(line);
-		    				}
-		    			} else {
-		    				WriteLine(line);
-		    			}
+		    			processMessageLine(line);
 		    		}
 		    	}
 		    	catch (Exception ex) {
@@ -401,6 +380,31 @@ public class BotScriptEngine {
 		    e.printStackTrace();  
 		} finally {
 			
+		}
+	}
+	
+	private void processMessageLine(String line) {
+		if (line.startsWith("{")) {
+			// this is probably a question
+			try {
+				JSONParser parser = new JSONParser();
+				JSONObject jsonObject = (JSONObject) parser.parse(line);
+				String faction = jsonObject.get("faction").toString();
+				String questionType = jsonObject.get("type").toString();
+				String q = jsonObject.get("q").toString();
+				String question = (jsonObject.containsKey("question")) ? jsonObject.get("question").toString() : "?";
+				String datafile = (jsonObject.containsKey("datafile")) ? jsonObject.get("datafile").toString() : "";
+				String options = (jsonObject.containsKey("options")) ? jsonObject.get("options").toString() : "";
+				
+				_fireBotScriptEvent(new BotScriptEvent(this, BotScriptEvent.EVENTTYPE_QUESTION, new Question(faction, questionType, q, question, datafile, options)));
+			}
+			catch (Exception ex)
+			{
+				WriteLine("JSON: " + ex.toString());
+				WriteLine(line);
+			}
+		} else {
+			WriteLine(line);
 		}
 	}
 }
