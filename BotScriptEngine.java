@@ -168,7 +168,9 @@ public class BotScriptEngine {
 		try {
 			containsJS = _mod.getDataArchive().getInputStream("ai-script.js") != null;
 			containsJS = containsJS && _mod.getDataArchive().getInputStream(action.replaceAll("\\s","") + ".js") != null;
-		} catch (IOException e1) {}
+		} catch (IOException e1) {
+			containsJS = false;
+		}
 		return containsJS;
 	}
 	
@@ -176,7 +178,9 @@ public class BotScriptEngine {
 		boolean containsPY = false;
 		try {
 			containsPY = _mod.getDataArchive().getInputStream("ai-script.py") != null;
-		} catch (IOException e1) {}
+		} catch (IOException e1) {
+			containsPY = false;
+		}
 		return containsPY;
 	}
 	
@@ -187,7 +191,10 @@ public class BotScriptEngine {
 			RunJS(jsonString, action);
 		}
 		
-		if (!containsJS && ContainsPY()) {
+		if (ContainsPY()) {
+//			if (containsJS)
+//				WriteLine("");
+			
 			// try Python
 			RunPython(jsonString);
 		}
@@ -217,29 +224,50 @@ public class BotScriptEngine {
 		Reader readerJsonLib = null;
 		Reader readerPolyfill = null;
 		Reader readerAIScript = null;
+		String fileName = "";
+		StringWriter writer = null;
 		
 		try {
-			readerJsonLib = new InputStreamReader(_mod.getDataArchive().getInputStream("json2.js"));
+			writer = new StringWriter();
+			PrintWriter pw = new PrintWriter(writer, true);
+			engine.getContext().setWriter(pw);
+			
+		    // ***
+			
+			fileName = "json2.js";
+			readerJsonLib = new InputStreamReader(_mod.getDataArchive().getInputStream(fileName));
 			engine.eval(readerJsonLib);
 			
-			readerPolyfill = new InputStreamReader(_mod.getDataArchive().getInputStream("polyfill.js"));
+			fileName = "polyfill.js";
+			readerPolyfill = new InputStreamReader(_mod.getDataArchive().getInputStream(fileName));
 			engine.eval(readerPolyfill);
 			
-			readerPolyfill = new InputStreamReader(_mod.getDataArchive().getInputStream("ai-tools.js"));
+			fileName = "ai-tools.js";
+			readerPolyfill = new InputStreamReader(_mod.getDataArchive().getInputStream(fileName));
 			engine.eval(readerPolyfill);
 			
-			readerPolyfill = new InputStreamReader(_mod.getDataArchive().getInputStream(action.replaceAll("\\s","") + ".js"));
+			fileName = action.replaceAll("\\s","") + ".js";
+			readerPolyfill = new InputStreamReader(_mod.getDataArchive().getInputStream(fileName));
 			engine.eval(readerPolyfill);
 			
+			fileName = "";
+			engine.eval("isvassal = true;");
 			engine.eval("inputString = '" + (reply == null ? jsonString : reply.datafile()) + "';");
 			if (reply != null) engine.eval("answer = '" + reply.toJSONReply().replaceAll("'", "\\'") + "';");
 			
-			readerAIScript = new InputStreamReader(_mod.getDataArchive().getInputStream("ai-script.js"));
+			fileName = "ai-script.js";
+			readerAIScript = new InputStreamReader(_mod.getDataArchive().getInputStream(fileName));
 			engine.eval(readerAIScript);
 			
 		} catch (ScriptException e1) {
-			WriteLine("JS Exception " + e1.toString());
+			WriteLine("JavaScript Exception – " + fileName + ", line " + e1.getLineNumber() + " :: " + e1.getMessage());
 			e1.printStackTrace();
+			WriteLine("DUMPING ALL SCRIPT OUTPUT:");
+			StringBuffer sb = writer.getBuffer();
+			String[] sbs = sb.toString().split("\n");
+			for (int i = 0; i < sbs.length; i++)
+				WriteLine("DBG: " + sbs[i]);
+			
 		} catch (FileNotFoundException e1) {
 			WriteLine("FileNotFoundException " + e1.toString());
 			e1.printStackTrace();
@@ -251,31 +279,38 @@ public class BotScriptEngine {
 				try {
 					readerJsonLib.close();
 				} catch (IOException e1) {
-					e1.printStackTrace();
+					//e1.printStackTrace();
 				}
 			}
 			if (readerPolyfill != null) {
 				try {
 					readerPolyfill.close();
 				} catch (IOException e1) {
-					e1.printStackTrace();
+					//e1.printStackTrace();
 				}
 			}
 			if (readerAIScript != null) {
 				try {
 					readerAIScript.close();
 				} catch (IOException e1) {
-					e1.printStackTrace();
+					//e1.printStackTrace();
 				}
 			}
 		}
 		
 		Object output = engine.get("msg");
-		if (output != null) {
+		if (output.toString().startsWith("sun.org.mozilla.javascript.internal.NativeArray")) {
+			try {
+				engine.eval("joinMsg();");
+			} catch (ScriptException e) {
+			}
+			output = engine.get("msg");
+		}
+		if (output != null && !output.toString().startsWith("sun.org.mozilla.javascript.internal.NativeArray")) {
 			String msgs = output.toString();
 			String[] msg = msgs.split("\n");
 			for (int i = 0; i < msg.length; i++) {
-				processMessageLine(msg[i]);
+				processMessageLine(msg[i], engine);
 			}
 		}
 	}
@@ -348,7 +383,7 @@ public class BotScriptEngine {
 		    	String line = null;
 		    	try {
 		    		while ((line = reader.readLine()) != null) {
-		    			processMessageLine(line);
+		    			processMessageLine(line, null);
 		    		}
 		    	}
 		    	catch (Exception ex) {
@@ -383,7 +418,7 @@ public class BotScriptEngine {
 		}
 	}
 	
-	private void processMessageLine(String line) {
+	private void processMessageLine(String line, ScriptEngine engine) {
 		if (line.startsWith("{")) {
 			// this is probably a question
 			try {
@@ -395,6 +430,9 @@ public class BotScriptEngine {
 				String question = (jsonObject.containsKey("question")) ? jsonObject.get("question").toString() : "?";
 				String datafile = (jsonObject.containsKey("datafile")) ? jsonObject.get("datafile").toString() : "";
 				String options = (jsonObject.containsKey("options")) ? jsonObject.get("options").toString() : "";
+				String gamedata = engine != null ? engine.get("gamedata").toString() : "";
+				if (datafile.length() == 0 && gamedata.length() > 0)
+					datafile = gamedata;
 				
 				_fireBotScriptEvent(new BotScriptEvent(this, BotScriptEvent.EVENTTYPE_QUESTION, new Question(faction, questionType, q, question, datafile, options)));
 			}
