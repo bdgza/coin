@@ -40,9 +40,12 @@ import VASSAL.command.Command;
 import VASSAL.configure.Configurer;
 import VASSAL.configure.ConfigurerFactory;
 import VASSAL.configure.IconConfigurer;
+import VASSAL.counters.BasicPiece;
 import VASSAL.counters.Deck;
+import VASSAL.counters.Decorator;
 import VASSAL.counters.DynamicProperty;
 import VASSAL.counters.GamePiece;
+import VASSAL.counters.Immobilized;
 import VASSAL.counters.Stack;
 import VASSAL.i18n.Resources;
 import VASSAL.tools.FormattedString;
@@ -229,6 +232,20 @@ public class FallingAIWindow extends AbstractConfigurable {
 //			}
 			
 			if (!(piece instanceof Deck) && !(piece instanceof Stack) && (!pieceName.equals("?")) && (pieceName.length() > 0)) {
+				
+				// Joel has named "Roman Ally" -> "Germanic Ally" instead in the module, so we need to check for the name of the PNG image
+				if (pieceName.indexOf("Germanic Ally") != -1) {
+					Object inner = Decorator.getInnermost(piece);
+					if (inner != null && inner instanceof BasicPiece) {
+						BasicPiece basic = (BasicPiece) inner;
+						if (basic.getType().indexOf(";;;Roman Ally.png") > -1) {
+							// change pieceName from Germanic Ally to Roman Ally
+							pieceName = "Roman Ally";
+						}
+					}
+				}
+				
+				// set the population from property
 				if (pieceName.indexOf(" Pop") == 1) { // 1 Pop, 2 Pop, 3 Pop
 					// population token, check for control
 					int control = Integer.parseInt(((DynamicProperty)piece).getProperty("ControlValue").toString());
@@ -329,6 +346,8 @@ public class FallingAIWindow extends AbstractConfigurable {
 
 //		WriteLine("JSON: " + jsonString);
 
+//		WriteLine("SHIFT? " + (e.getModifiers() & InputEvent.SHIFT_MASK));
+		_botScriptEngine.setVerbose((e.getModifiers() & InputEvent.SHIFT_MASK) != 0);
 		_botScriptEngine.RunScript(jsonString, aiButtonName);
 		
 //		_botScriptEngine.removeBotScriptListener(listener);
