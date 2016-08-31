@@ -26,6 +26,11 @@ public class BotScriptEngine {
 	private static GameModule _mod;
 	private static String _coinTitle;
 	private List<BotScriptListener> _listeners;
+	private boolean _verboseMode = false;
+	
+	public void setVerbose(boolean verbose) {
+		_verboseMode = verbose;
+	}
 	
 	public BotScriptEngine(GameModule module, String coinTitle) {
 		_mod = module;
@@ -226,6 +231,7 @@ public class BotScriptEngine {
 		Reader readerAIScript = null;
 		String fileName = "";
 		StringWriter writer = null;
+		boolean bError = false;
 		
 		try {
 			writer = new StringWriter();
@@ -260,13 +266,12 @@ public class BotScriptEngine {
 			engine.eval(readerAIScript);
 			
 		} catch (ScriptException e1) {
+			bError = true;
+			WriteLine("DUMPING ALL SCRIPT OUTPUT:");
+			WriteBuffer(writer.getBuffer());
+			WriteLine("---");
 			WriteLine("JavaScript Exception – " + fileName + ", line " + e1.getLineNumber() + " :: " + e1.getMessage());
 			e1.printStackTrace();
-			WriteLine("DUMPING ALL SCRIPT OUTPUT:");
-			StringBuffer sb = writer.getBuffer();
-			String[] sbs = sb.toString().split("\n");
-			for (int i = 0; i < sbs.length; i++)
-				WriteLine("DBG: " + sbs[i]);
 			
 		} catch (FileNotFoundException e1) {
 			WriteLine("FileNotFoundException " + e1.toString());
@@ -298,21 +303,32 @@ public class BotScriptEngine {
 			}
 		}
 		
-		Object output = engine.get("msg");
-		if (output.toString().startsWith("sun.org.mozilla.javascript.internal.NativeArray")) {
-			try {
-				engine.eval("joinMsg();");
-			} catch (ScriptException e) {
+		if (!bError && _verboseMode) {
+			WriteLine("VERBOSE MODE ACTIVATED:");
+			WriteBuffer(writer.getBuffer());
+		} else {
+			Object output = engine.get("msg");
+			if (output.toString().startsWith("sun.org.mozilla.javascript.internal.NativeArray")) {
+				try {
+					engine.eval("joinMsg();");
+				} catch (ScriptException e) {
+				}
+				output = engine.get("msg");
 			}
-			output = engine.get("msg");
-		}
-		if (output != null && !output.toString().startsWith("sun.org.mozilla.javascript.internal.NativeArray")) {
-			String msgs = output.toString();
-			String[] msg = msgs.split("\n");
-			for (int i = 0; i < msg.length; i++) {
-				processMessageLine(msg[i], engine);
+			if (output != null && !output.toString().startsWith("sun.org.mozilla.javascript.internal.NativeArray")) {
+				String msgs = output.toString();
+				String[] msg = msgs.split("\n");
+				for (int i = 0; i < msg.length; i++) {
+					processMessageLine(msg[i], engine);
+				}
 			}
 		}
+	}
+	
+	private void WriteBuffer(StringBuffer sb) {
+		String[] sbs = sb.toString().split("\n");
+		for (int i = 0; i < sbs.length; i++)
+			WriteLine("% " + sbs[i]);
 	}
 	
 	private void RunPython(String jsonString) {
