@@ -27,6 +27,9 @@ public class BotScriptEngine {
 	private static String _coinTitle;
 	private List<BotScriptListener> _listeners;
 	private boolean _verboseMode = false;
+	private ArrayList<String> _factions;
+	private ArrayList<BotConfiguration> _botConfigurations;
+	private int _selectedBot = 0;
 	
 	public void setVerbose(boolean verbose) {
 		_verboseMode = verbose;
@@ -37,6 +40,15 @@ public class BotScriptEngine {
 		_coinTitle = coinTitle;
 		_listeners = new ArrayList<BotScriptListener>();
 		final BotScriptEngine self = this;
+		
+		_factions = new ArrayList<String>();
+		_botConfigurations = new ArrayList<BotConfiguration>();
+		
+		// load bot configuration
+		
+		loadBots();
+		
+		// respond to question triggers
 		
 		this.addBotScriptListener(new BotScriptListener() {
 			
@@ -88,6 +100,53 @@ public class BotScriptEngine {
 				}
 			}
 		});
+	}
+	
+	public ArrayList<String> BotFactions() {
+		return _factions;
+	}
+	
+	public ArrayList<BotConfiguration> BotConfigurations() {
+		return _botConfigurations;
+	}
+	
+	public void loadBots() {
+		try {
+	        InputStreamReader botsFile = new InputStreamReader(_mod.getDataArchive().getInputStream("bots.json"));
+	        JSONParser parser = new JSONParser();
+	        JSONObject jsonObject = (JSONObject) parser.parse(botsFile);
+	        botsFile.close();
+	        
+	        JSONArray factions = (JSONArray) jsonObject.get("factions");
+	        for (int i = 0; i < factions.size(); i++) {
+	        	_factions.add((String) factions.get(i));
+	        }
+	        
+	        JSONArray bots = (JSONArray) jsonObject.get("bots");
+	        for (int i = 0; i < bots.size(); i++) {
+	        	JSONObject bot = (JSONObject) bots.get(i);
+	        	BotConfiguration botConf = new BotConfiguration();
+	        	botConf.name = (String) bot.get("name");
+	        	botConf.folder = (String) bot.get("folder");
+	        	JSONArray actions = (JSONArray) bot.get("actions");
+	        	for (int j = 0; j < actions.size(); j++) {
+	        		ArrayList<String> actsArr = new ArrayList<String>();
+	        		JSONArray acts = (JSONArray) actions.get(j);
+	        		for (int k = 0; k < acts.size(); k++) {
+	        			actsArr.add((String) acts.get(k));
+	        		}
+	        		botConf.actions.add(actsArr);
+	        	}
+	        	_botConfigurations.add(botConf);
+	        }
+	    }
+		catch (IOException ex) {
+			WriteLine("IOException on Bots Configuration: " + ex.getMessage());
+			return;
+		} catch (ParseException ex) {
+			WriteLine("ParseException on Bots Configuration: " + ex.getMessage());
+			return;
+		}
 	}
 	
 	public synchronized void addBotScriptListener(BotScriptListener l) {
@@ -168,11 +227,19 @@ public class BotScriptEngine {
 		_mod.sendAndLog(cc);
 	}
 	
+	public void setSelectedBot(int selectedBot) {
+		_selectedBot = selectedBot;
+	}
+	
+	private String botFolder() {
+		return _botConfigurations.get(_selectedBot).folder;
+	}
+	
 	private boolean ContainsJS(String action) {
 		boolean containsJS = false;
 		try {
-			containsJS = _mod.getDataArchive().getInputStream("ai-script.js") != null;
-			containsJS = containsJS && _mod.getDataArchive().getInputStream(action.replaceAll("\\s","") + ".js") != null;
+			containsJS = _mod.getDataArchive().getInputStream(botFolder() + "/ai-script.js") != null;
+			containsJS = containsJS && _mod.getDataArchive().getInputStream(botFolder() + "/" + action.replaceAll("\\s","") + ".js") != null;
 		} catch (IOException e1) {
 			containsJS = false;
 		}
@@ -182,7 +249,7 @@ public class BotScriptEngine {
 	private boolean ContainsPY() {
 		boolean containsPY = false;
 		try {
-			containsPY = _mod.getDataArchive().getInputStream("ai-script.py") != null;
+			containsPY = _mod.getDataArchive().getInputStream(botFolder() + "/ai-script.py") != null;
 		} catch (IOException e1) {
 			containsPY = false;
 		}
@@ -241,19 +308,19 @@ public class BotScriptEngine {
 		    // ***
 			
 			fileName = "json2.js";
-			readerJsonLib = new InputStreamReader(_mod.getDataArchive().getInputStream(fileName));
+			readerJsonLib = new InputStreamReader(_mod.getDataArchive().getInputStream(botFolder() + "/" + fileName));
 			engine.eval(readerJsonLib);
 			
 			fileName = "polyfill.js";
-			readerPolyfill = new InputStreamReader(_mod.getDataArchive().getInputStream(fileName));
+			readerPolyfill = new InputStreamReader(_mod.getDataArchive().getInputStream(botFolder() + "/" + fileName));
 			engine.eval(readerPolyfill);
 			
 			fileName = "ai-tools.js";
-			readerPolyfill = new InputStreamReader(_mod.getDataArchive().getInputStream(fileName));
+			readerPolyfill = new InputStreamReader(_mod.getDataArchive().getInputStream(botFolder() + "/" + fileName));
 			engine.eval(readerPolyfill);
 			
 			fileName = action.replaceAll("\\s","") + ".js";
-			readerPolyfill = new InputStreamReader(_mod.getDataArchive().getInputStream(fileName));
+			readerPolyfill = new InputStreamReader(_mod.getDataArchive().getInputStream(botFolder() + "/" + fileName));
 			engine.eval(readerPolyfill);
 			
 			fileName = "";
@@ -262,11 +329,12 @@ public class BotScriptEngine {
 			if (reply != null) engine.eval("answer = '" + reply.toJSONReply().replaceAll("'", "\\'") + "';");
 			
 			fileName = "ai-script.js";
-			readerAIScript = new InputStreamReader(_mod.getDataArchive().getInputStream(fileName));
+			readerAIScript = new InputStreamReader(_mod.getDataArchive().getInputStream(botFolder() + "/" + fileName));
 			engine.eval(readerAIScript);
 			
 		} catch (ScriptException e1) {
 			bError = true;
+			WriteLine("JavaScript Engine Exception");
 			WriteLine("DUMPING ALL SCRIPT OUTPUT:");
 			WriteBuffer(writer.getBuffer());
 			WriteLine("---");
@@ -307,20 +375,25 @@ public class BotScriptEngine {
 			WriteLine("VERBOSE MODE ACTIVATED:");
 			WriteBuffer(writer.getBuffer());
 		} else {
-			Object output = engine.get("msg");
-			if (output.toString().startsWith("sun.org.mozilla.javascript.internal.NativeArray")) {
-				try {
-					engine.eval("joinMsg();");
-				} catch (ScriptException e) {
+			try {
+				Object output = engine.get("msg");
+				if (output.toString().startsWith("sun.org.mozilla.javascript.internal.NativeArray")) {
+					try {
+						engine.eval("joinMsg();");
+					} catch (ScriptException e) {
+					}
+					output = engine.get("msg");
 				}
-				output = engine.get("msg");
+				if (output != null && !output.toString().startsWith("sun.org.mozilla.javascript.internal.NativeArray")) {
+					String msgs = output.toString();
+					String[] msg = msgs.split("\n");
+					for (int i = 0; i < msg.length; i++) {
+						processMessageLine(msg[i], engine);
+					}
+				}
 			}
-			if (output != null && !output.toString().startsWith("sun.org.mozilla.javascript.internal.NativeArray")) {
-				String msgs = output.toString();
-				String[] msg = msgs.split("\n");
-				for (int i = 0; i < msg.length; i++) {
-					processMessageLine(msg[i], engine);
-				}
+			catch (Exception ex) {
+				
 			}
 		}
 	}
@@ -345,7 +418,7 @@ public class BotScriptEngine {
 		try {
 	        scriptFile = File.createTempFile("ai-script-", ".py");
 	        scriptFile.deleteOnExit();
-	        InputStreamReader in = new InputStreamReader(_mod.getDataArchive().getInputStream("ai-script.py"));
+	        InputStreamReader in = new InputStreamReader(_mod.getDataArchive().getInputStream(botFolder() + "/ai-script.py"));
 	        FileOutputStream out = new FileOutputStream(scriptFile);
 	        IOUtils.copy(in, out);
 	        scriptFilePath = scriptFile.getPath();

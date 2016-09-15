@@ -22,9 +22,12 @@ import java.awt.*;
 import java.awt.event.*;
 import java.util.*;
 
+import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
 import javax.swing.JDialog;
+import javax.swing.JPanel;
 
 import VASSAL.build.AbstractConfigurable;
 import VASSAL.build.AutoConfigurable;
@@ -66,6 +69,8 @@ public class FallingAIWindow extends AbstractConfigurable {
 	private JCheckBox belgicNPBox;
 	private JCheckBox romanNPBox;
 	private GameState myGameState;
+	private JPanel[] buttonPanels = new JPanel[4];
+	private JComboBox<String> botCombo;
 
 	private BotScriptEngine _botScriptEngine;
 
@@ -87,30 +92,31 @@ public class FallingAIWindow extends AbstractConfigurable {
 		launch.setToolTipText("AI"); //$NON-NLS-1$
 		launch.setEnabled(true);
 
-		frame.pack();
+		//frame.pack();
 
 		int x = frame.getX();
 		int y = frame.getY();
-		x = x + ((frame.getWidth() - 410) / 2);
-		y = y + ((frame.getHeight() - 120) / 2);
+		x = x + ((frame.getWidth() - 520) / 2);
+		y = y + ((frame.getHeight() - 135) / 2);
 		if (x < 15)
 			x = 15;
 		if (y < 15)
 			y = 15;
-		frame.setSize(410, 120);
+		frame.setSize(520, frame.getHeight()); // TODO: was 110 for 1 row of buttons!
 		frame.setLocation(x, y);
 	}
 
-	protected class FallingAIDialog extends JDialog {
+	protected class FallingAIDialog extends JDialog implements ActionListener {
 
 		private static final long serialVersionUID = 1L;
 
 		protected FallingAIDialog() {
 			super(GameModule.getGameModule().getFrame());
-			initComponents();
-			setLocationRelativeTo(getOwner());
 			
 			_botScriptEngine = new BotScriptEngine(mod, "Falling Sky AI");
+			
+			initComponents();
+			setLocationRelativeTo(getOwner());
 		}
 		
 		private JButton makeButton(String name, GridBagLayout gridbag, GridBagConstraints c) {
@@ -150,29 +156,76 @@ public class FallingAIWindow extends AbstractConfigurable {
 	        c.fill = GridBagConstraints.BOTH;
 	        c.weightx = 1.0;
 	        c.gridwidth = GridBagConstraints.REMAINDER;
+			
+			botCombo = new JComboBox<String>();
+			for (int i = 0; i < _botScriptEngine.BotConfigurations().size(); i++) {
+				botCombo.addItem(_botScriptEngine.BotConfigurations().get(i).name);
+			}
+			gridbag.setConstraints(botCombo, c);
+			add(botCombo);
+			
 			makeButton("Game State", gridbag, c);
 			
 			c.weightx = 0.0;
 			c.gridwidth = 1;
 			
-			aeduiNPBox = makeCheckBox("Aedui NP", gridbag, c);
-			arverniNPBox = makeCheckBox("Arverni NP", gridbag, c);
-			belgicNPBox = makeCheckBox("Belgic NP", gridbag, c);
+			try {
+				aeduiNPBox = makeCheckBox(_botScriptEngine.BotFactions().get(0), gridbag, c);
+				arverniNPBox = makeCheckBox(_botScriptEngine.BotFactions().get(1), gridbag, c);
+				belgicNPBox = makeCheckBox(_botScriptEngine.BotFactions().get(2), gridbag, c);
+				
+				c.gridwidth = GridBagConstraints.REMAINDER;
+				
+				romanNPBox = makeCheckBox(_botScriptEngine.BotFactions().get(3), gridbag, c);
+				
+				c.weightx = 0.0;
+				c.gridwidth = 1;
+				
+				for (int i = 0; i < 4; i++) {
+					buttonPanels[i] = new JPanel();
+					buttonPanels[i].setLayout(new BoxLayout(buttonPanels[i], BoxLayout.Y_AXIS));
+					if (i == 3)
+						c.gridwidth = GridBagConstraints.REMAINDER;
+					gridbag.setConstraints(buttonPanels[i], c);
+					add(buttonPanels[i]);
+				}
+				
+				botCombo.addActionListener(this);
+				
+				actionPerformed(null);
+			}
+			catch (Exception ex) {
+				WriteLine("ERROR! " + ex.getMessage());
+			}
+		}
+		
+		public void actionPerformed(ActionEvent e) {			
+			int bot = botCombo.getSelectedIndex();
+			int rows = 0;
+			_botScriptEngine.setSelectedBot(bot);
 			
-			c.gridwidth = GridBagConstraints.REMAINDER;
+			for (int i = 0; i < 4; i++) {
+				buttonPanels[i].removeAll();
+				
+				ArrayList<String> acts = _botScriptEngine.BotConfigurations().get(bot).actions.get(i);
+				
+				rows = Math.max(rows, acts.size());
+				
+				for (int j = 0; j < acts.size(); j++) {					
+					JButton button = new JButton(acts.get(j));
+					button.addActionListener(new ActionListener() {
+						public void actionPerformed(ActionEvent e) {
+							aiButtonActionPerformed(e);
+						}
+					});
+					buttonPanels[i].add(button);
+				}
+			}
 			
-			romanNPBox = makeCheckBox("Roman NP", gridbag, c);
+			this.setSize(this.getWidth(), 110 + (25 * rows));
 			
-			c.weightx = 0.0;
-			c.gridwidth = 1;
-			
-			makeButton("Aedui", gridbag, c);
-			makeButton("Arverni", gridbag, c);
-			makeButton("Belgic", gridbag, c);
-			
-			c.gridwidth = GridBagConstraints.REMAINDER;
-			
-			makeButton("Roman", gridbag, c);
+			revalidate();
+			repaint();
 		}
 	}
 	
