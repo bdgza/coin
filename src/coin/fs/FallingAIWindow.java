@@ -48,7 +48,6 @@ import VASSAL.counters.Deck;
 import VASSAL.counters.Decorator;
 import VASSAL.counters.DynamicProperty;
 import VASSAL.counters.GamePiece;
-import VASSAL.counters.Immobilized;
 import VASSAL.counters.Stack;
 import VASSAL.i18n.Resources;
 import VASSAL.tools.FormattedString;

@@ -1,8 +1,5 @@
 package coin;
 
-import java.io.IOException;
-import java.io.InputStreamReader;
-
 public class ProcessWithTimeout extends Thread
 {
     private Process m_process;

@@ -3,6 +3,8 @@ package coin;
 import java.util.EventObject;
 
 public class BotScriptEvent extends EventObject {
+	private static final long serialVersionUID = 1L;
+
 	public static final String EVENTTYPE_QUESTION = "QUESTION";
 	
 	private String _eventType;

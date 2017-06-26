@@ -1,15 +1,11 @@
 package coin;
 
-import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
 import java.util.*;
 import java.util.List;
-import java.util.concurrent.TimeoutException;
 
 import javax.script.*;
-import javax.swing.JFrame;
-import javax.swing.JOptionPane;
 
 import org.apache.commons.io.IOUtils;
 
@@ -166,7 +162,7 @@ public class BotScriptEngine {
 	public String ConstructJSON(StringBuilder json, ArrayList<ZonePiece> offboard, ArrayList<ZoneIndex> zones) {
 		json.append("\"offboard\": [");
 		
-		int oc = 1;
+		// int oc = 1;
 		for (int j = 0; j < offboard.size(); j++) {
 			ZonePiece piece = offboard.get(j);
 //			WriteLine(" " + (oc++) + ". " +
