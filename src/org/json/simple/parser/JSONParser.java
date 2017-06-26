@@ -30,12 +30,12 @@ public class JSONParser {
 	public static final int S_END=6;
 	public static final int S_IN_ERROR=-1;
 	
-	private LinkedList handlerStatusStack;
+	private LinkedList<Object> handlerStatusStack;
 	private Yylex lexer = new Yylex((Reader)null);
 	private Yytoken token = null;
 	private int status = S_INIT;
 	
-	private int peekStatus(LinkedList statusStack){
+	private int peekStatus(LinkedList<Object> statusStack){
 		if(statusStack.size()==0)
 			return -1;
 		Integer status=(Integer)statusStack.getFirst();
@@ -96,7 +96,7 @@ public class JSONParser {
 	 * Parse JSON text into java object from the input source.
 	 * 	
 	 * @param in
-     * @param containerFactory - Use this factory to createyour own JSON object and JSON array containers.
+     * @param containerFactory - Use this factory to create your own JSON object and JSON array containers.
 	 * @return Instance of the following:
 	 *  org.json.simple.JSONObject,
 	 * 	org.json.simple.JSONArray,

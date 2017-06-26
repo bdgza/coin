@@ -4,19 +4,14 @@ import java.awt.event.*;
 import java.io.*;
 import java.util.*;
 import java.util.List;
-
 import javax.script.*;
-
 import org.apache.commons.io.IOUtils;
-
 import VASSAL.build.GameModule;
 import VASSAL.build.module.Chatter;
 import VASSAL.command.Command;
 import VASSAL.tools.FormattedString;
-
 import org.json.simple.*;
 import org.json.simple.parser.*;
-
 
 public class BotScriptEngine {
 	private static GameModule _mod;
@@ -36,6 +31,8 @@ public class BotScriptEngine {
 		_coinTitle = coinTitle;
 		_listeners = new ArrayList<BotScriptListener>();
 		final BotScriptEngine self = this;
+		
+		WriteLine("BotScriptEngine: " + coinTitle);
 		
 		_factions = new ArrayList<String>();
 		_botConfigurations = new ArrayList<BotConfiguration>();
@@ -107,6 +104,7 @@ public class BotScriptEngine {
 	}
 	
 	public void loadBots() {
+		// load internal bots
 		try {
 	        InputStreamReader botsFile = new InputStreamReader(_mod.getDataArchive().getInputStream("bots.json"));
 	        JSONParser parser = new JSONParser();
@@ -143,6 +141,9 @@ public class BotScriptEngine {
 			WriteLine("ParseException on Bots Configuration: " + ex.getMessage());
 			return;
 		}
+		
+		// load external bots
+		// TODO: load external bots from disk
 	}
 	
 	public synchronized void addBotScriptListener(BotScriptListener l) {

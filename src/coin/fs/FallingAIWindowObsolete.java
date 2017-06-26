@@ -57,7 +57,7 @@ import coin.*;
 /**
  * This is a copy of the NotesWindow in VASSAL, could probably still be improved upon
  */
-public class FallingAIWindow extends AbstractConfigurable {
+public class FallingAIWindowObsolete extends AbstractConfigurable {
 	final GameModule mod = GameModule.getGameModule();
 
 	protected JDialog frame;
@@ -78,7 +78,7 @@ public class FallingAIWindow extends AbstractConfigurable {
 	public static final String BUTTON_TEXT = "buttonText"; //$NON-NLS-1$
 	public static final String TOOLTIP = "tooltip"; //$NON-NLS-1$
 
-	public FallingAIWindow() {
+	public FallingAIWindowObsolete() {
 		frame = new FallingAIDialog();
 		frame.setTitle("Falling Sky AI");
 		ActionListener al = new ActionListener() {
@@ -445,7 +445,7 @@ public class FallingAIWindow extends AbstractConfigurable {
 
 	public static class IconConfig implements ConfigurerFactory {
 		public Configurer getConfigurer(AutoConfigurable c, String key, String name) {
-			return new IconConfigurer(key, name, ((FallingAIWindow) c).launch.getAttributeValueString(ICON));
+			return new IconConfigurer(key, name, ((FallingAIWindowObsolete) c).launch.getAttributeValueString(ICON));
 		}
 	}
 

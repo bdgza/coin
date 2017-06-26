@@ -60,7 +60,7 @@ import coin.*;
 /**
  * This is a copy of the NotesWindow in VASSAL, could probably still be improved upon
  */
-public class DistantAIWindow extends AbstractConfigurable {
+public class DistantAIWindowObsolete extends AbstractConfigurable {
 	final GameModule mod = GameModule.getGameModule();
 
 	protected JDialog frame;
@@ -77,7 +77,7 @@ public class DistantAIWindow extends AbstractConfigurable {
 	public static final String BUTTON_TEXT = "buttonText"; //$NON-NLS-1$
 	public static final String TOOLTIP = "tooltip"; //$NON-NLS-1$
 
-	public DistantAIWindow() {
+	public DistantAIWindowObsolete() {
 		frame = new DistantAIDialog();
 		frame.setTitle("A Distant Plain AI");
 		ActionListener al = new ActionListener() {
@@ -323,7 +323,7 @@ public class DistantAIWindow extends AbstractConfigurable {
 
 	public static class IconConfig implements ConfigurerFactory {
 		public Configurer getConfigurer(AutoConfigurable c, String key, String name) {
-			return new IconConfigurer(key, name, ((DistantAIWindow) c).launch.getAttributeValueString(ICON));
+			return new IconConfigurer(key, name, ((DistantAIWindowObsolete) c).launch.getAttributeValueString(ICON));
 		}
 	}
 
