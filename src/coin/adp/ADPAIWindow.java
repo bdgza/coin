@@ -6,8 +6,9 @@ public class ADPAIWindow extends AIWindow {
 	private static final long serialVersionUID = 1L;
 
 	@Override
-	protected void initComponents() {
-		// TODO Auto-generated method stub
+	protected void initComponents(BotPackage bot) {
+		this.bot = bot;
+		
 		
 	}
 

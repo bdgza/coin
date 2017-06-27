@@ -31,15 +31,13 @@ public class BotScriptEngine {
 		_coinTitle = coinTitle;
 		_listeners = new ArrayList<BotScriptListener>();
 		final BotScriptEngine self = this;
-		
-		WriteLine("BotScriptEngine: " + coinTitle);
-		
+				
 		_factions = new ArrayList<String>();
 		_botConfigurations = new ArrayList<BotConfiguration>();
 		
 		// load bot configuration
 		
-		loadBots();
+		//loadBots();
 		
 		// respond to question triggers
 		
@@ -218,7 +216,7 @@ public class BotScriptEngine {
 	}
 			
 	private static void WriteLine(String msgLine) {
-		FormattedString cStr = new FormattedString("-<AI> " + msgLine);
+		FormattedString cStr = new FormattedString(" -<AI> " + msgLine);
 		final Command cc = new Chatter.DisplayText(_mod.getChatter(), cStr.getLocalizedText());
 		cc.execute();
 		_mod.sendAndLog(cc);

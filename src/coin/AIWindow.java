@@ -13,28 +13,22 @@ import VASSAL.tools.FormattedString;
 public abstract class AIWindow extends JDialog implements ActionListener, IAIWindow {
 	private static final long serialVersionUID = 1L;
 
-	private BotScriptEngine botScriptEngine;
+	protected BotPackage bot;
 	final static GameModule mod = GameModule.getGameModule();
 	
 	protected AIWindow() {
 		super(mod.getFrame());
-		
-		botScriptEngine = new BotScriptEngine(mod, getModuleTitle());
-		
-		initComponents();
-		setLocationRelativeTo(getOwner());
 	}
-	
+		
 	public void actionPerformed(ActionEvent e) {
-		// TODO Auto-generated method stub
 		
 	}
 	
-	protected abstract void initComponents();
+	protected abstract void initComponents(BotPackage bot);
 	public abstract String getModuleTitle();
 	
-	private void WriteLine(String msgLine) {
-		FormattedString cStr = new FormattedString("-<AI> " + msgLine);
+	protected void WriteLine(String msgLine) {
+		FormattedString cStr = new FormattedString("<COINBot> - " + msgLine);
 		final Command cc = new Chatter.DisplayText(mod.getChatter(), cStr.getLocalizedText());
 		cc.execute();
 		mod.sendAndLog(cc);
