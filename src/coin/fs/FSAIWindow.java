@@ -4,10 +4,10 @@ import coin.*;
 
 public class FSAIWindow extends AIWindow {
 	private static final long serialVersionUID = 1L;
-
+	
 	@Override
-	protected void initComponents(BotPackage botPackage) {
-		// TODO Auto-generated method stub
+	protected void initGameComponents() {
+		
 	}
 
 	@Override

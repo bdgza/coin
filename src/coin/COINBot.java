@@ -4,6 +4,7 @@ import java.awt.event.ActionListener;
 import java.io.*;
 import java.net.URISyntaxException;
 import java.util.concurrent.TimeUnit;
+import javax.swing.JDialog;
 
 import VASSAL.build.AbstractConfigurable;
 import VASSAL.build.AutoConfigurable;
@@ -22,13 +23,11 @@ import VASSAL.tools.LaunchButton;
 import org.json.simple.*;
 import org.json.simple.parser.*;
 
-import com.sun.org.glassfish.external.amx.BootAMXMBean;
-
 public class COINBot extends AbstractConfigurable {
 	final static GameModule mod = GameModule.getGameModule();
 
 	protected LaunchButton toolbarButton;
-	protected IAIWindow aiWindow;
+	protected AIWindow aiWindow;
 	protected BotPackage botPackage;
 
 	public static final String HOT_KEY = "hotkey"; //$NON-NLS-1$
@@ -41,9 +40,10 @@ public class COINBot extends AbstractConfigurable {
 	public COINBot() throws IOException {
 		ActionListener al = new ActionListener() {
 			public void actionPerformed(java.awt.event.ActionEvent e) {
-				// frame.setVisible(!frame.isShowing());
-				if (aiWindow != null)
-					WriteLine("TEST CLICKED");
+				if (aiWindow != null) {
+					JDialog diag = (JDialog)aiWindow;
+					diag.setVisible(!diag.isShowing());
+				}
 			}
 		};
 
@@ -72,8 +72,8 @@ public class COINBot extends AbstractConfigurable {
 		// display Bot information
 		
 		WriteLine(" - COINBot bot loaded \"" + botPackage.GetReadableLabel() + "\" v" + botPackage.Version);
-		for (int i = 0; i < botPackage.Factions.length; i++)
-			WriteLine(" - COINBot faction \"" + botPackage.Factions[i].Name + "\"");
+//		for (int i = 0; i < botPackage.Factions.length; i++)
+//			WriteLine(" - COINBot faction \"" + botPackage.Factions[i].Name + "\"");
 		
 		// detect Node if bot type is JS
 
@@ -82,6 +82,10 @@ public class COINBot extends AbstractConfigurable {
 
 			RunHelloWorld(botPackage.BasePath);
 		}
+		
+		// load components for COINBot AIWindow
+		
+		aiWindow.initComponents(botPackage);
 	}
 	
 	private String join(String[] array) {
@@ -212,7 +216,7 @@ public class COINBot extends AbstractConfigurable {
 				String line = null;
 				try {
 					while ((line = reader.readLine()) != null) {
-						WriteLine("<COINBot> - " + line);
+						WriteLine(" - <COINBot> - " + line);
 						// processMessageLine(line, null);
 					}
 				} catch (Exception ex) {

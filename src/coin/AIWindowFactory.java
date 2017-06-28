@@ -4,7 +4,7 @@ import coin.adp.*;
 import coin.fs.*;
 
 public class AIWindowFactory {
-	public static IAIWindow getAIWindow(String gameName) {
+	public static AIWindow getAIWindow(String gameName) {
 		if (gameName == "Andean Abyss - Final") {
 			return null; // TODO: Add game
 		}

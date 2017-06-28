@@ -6,6 +6,7 @@ public class Faction {
 	public String Id;
 	public String Name;
 	public String[] Actions;
+	public Boolean NonPlayer = false;
 	
 	public Faction() {
 		
