@@ -1,16 +1,21 @@
 package coin.adp;
 
+import java.util.ArrayList;
+
 import coin.*;
 
 public class ADPAIWindow extends AIWindow {
 	private static final long serialVersionUID = 1L;
 
-	@Override
 	protected void initGameComponents() {
 		
 	}
+	
+	protected PiecesGameState gatherGamePieces(ArrayList<ZoneIndex> zones) {
+		// TODO: to implement
+		return null;
+	}
 
-	@Override
 	public String getModuleTitle() {
 		return "A Distant Plain";
 	}

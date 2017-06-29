@@ -56,7 +56,7 @@ public class COINBot extends AbstractConfigurable {
 		toolbarButton.setEnabled(true);
 
 		if (aiWindow == null) {
-			WriteLine(" - COINBot is not compatible with this game module");
+			WriteLine(" - COINBot is not compatible with this game module: " + gameName);
 			return;
 		} else {
 			WriteLine(" - COINBot detected game \"" + aiWindow.getModuleTitle() + "\"");
@@ -71,7 +71,7 @@ public class COINBot extends AbstractConfigurable {
 		
 		// display Bot information
 		
-		WriteLine(" - COINBot bot loaded \"" + botPackage.GetReadableLabel() + "\" v" + botPackage.Version);
+		WriteLine(" - COINBot bot loaded \"" + botPackage.GetReadableLabel() + "\" v" + botPackage.version);
 //		for (int i = 0; i < botPackage.Factions.length; i++)
 //			WriteLine(" - COINBot faction \"" + botPackage.Factions[i].Name + "\"");
 		
@@ -80,7 +80,7 @@ public class COINBot extends AbstractConfigurable {
 		if (botPackage.GetBotType().equals("JS")) {
 			DetectNodeLocation();
 
-			RunHelloWorld(botPackage.BasePath);
+			RunHelloWorld(botPackage.basePath);
 		}
 		
 		// load components for COINBot AIWindow
@@ -185,7 +185,7 @@ public class COINBot extends AbstractConfigurable {
 			packageStream.close();
 
 			botPackage = new BotPackage(jsonObject);
-			botPackage.BasePath = baseBotPath;
+			botPackage.basePath = baseBotPath;
 		} catch (Exception ex) {
 			ex.printStackTrace();
 			botPackage = null;

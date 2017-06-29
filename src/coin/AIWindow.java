@@ -1,17 +1,11 @@
 package coin;
 
-import java.awt.Font;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.Point;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.InputEvent;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
+import java.awt.*;
+import java.awt.event.*;
 import java.util.*;
 
 import javax.swing.*;
+import javax.swing.border.BevelBorder;
 
 import VASSAL.build.GameModule;
 import VASSAL.build.module.Chatter;
@@ -23,7 +17,7 @@ import VASSAL.counters.*;
 import VASSAL.counters.Stack;
 import VASSAL.tools.FormattedString;
 
-public abstract class AIWindow extends JDialog implements ActionListener, IAIWindow {
+public abstract class AIWindow extends JDialog implements IAIWindow {
 	private static final long serialVersionUID = 1L;
 
 	protected BotPackage bot;
@@ -41,13 +35,10 @@ public abstract class AIWindow extends JDialog implements ActionListener, IAIWin
 			}
 		});
 	}
-		
-	public void actionPerformed(ActionEvent e) {
-		
-	}
 	
 	protected abstract void initGameComponents();
 	public abstract String getModuleTitle();
+	protected abstract PiecesGameState gatherGamePieces(ArrayList<ZoneIndex> zones);
 	
 	protected void WriteLine(String msgLine) {
 		FormattedString cStr = new FormattedString(" - <COINBot> - " + msgLine);
@@ -56,262 +47,111 @@ public abstract class AIWindow extends JDialog implements ActionListener, IAIWin
 		mod.sendAndLog(cc);
 	}
 
-	public void initComponents(BotPackage bot) {
+	public void initComponents(final BotPackage botPackage) {
+		bot = botPackage;
 		getContentPane().removeAll();
 		
-		GridBagLayout gridbag = new GridBagLayout();
-		GridBagConstraints c = new GridBagConstraints();
+		getContentPane().setLayout(new BorderLayout(2, 2));
 		
-		setFont(new Font("SansSerif", Font.PLAIN, 12));
-		setLayout(gridbag);
-
-        c.fill = GridBagConstraints.BOTH;
-        c.weightx = 1.0;
-        c.gridwidth = GridBagConstraints.REMAINDER;
+		JPanel panelActionButtons = new JPanel();
+		getContentPane().add(panelActionButtons, BorderLayout.NORTH);
 		
-        makeButton("Game State", gridbag, c);
+		panelActionButtons.setLayout(new FlowLayout(FlowLayout.LEFT, 2, 2));
+		for (int i = 0; i < bot.Actions.length; i++)
+        	panelActionButtons.add(makeButton(bot.Actions[i], "action:" + bot.Actions[i]));
 		
-		c.weightx = 0.0;
-		c.gridwidth = 1;
+		JPanel panelFactions = new JPanel();
+		getContentPane().add(panelFactions);
+		panelFactions.setLayout(new GridLayout(1, 0, 2, 2));
 		
-		try {
-			JCheckBox aeduiNPBox = makeCheckBox("a", gridbag, c);
-			JCheckBox arverniNPBox = makeCheckBox("b", gridbag, c);
-			JCheckBox belgicNPBox = makeCheckBox("c", gridbag, c);
+		for (int i = 0; i < bot.Factions.length; i++) {
+			final Faction faction = bot.Factions[i];
 			
-			c.gridwidth = GridBagConstraints.REMAINDER;
+			JPanel panel = new JPanel();
+			panel.setBorder(new BevelBorder(BevelBorder.RAISED, null, null, null, null));
+			panelFactions.add(panel);
 			
-			JCheckBox romanNPBox = makeCheckBox("d", gridbag, c);
+			panel.setLayout(new FlowLayout(FlowLayout.CENTER, 2, 2));
 			
-			c.weightx = 0.0;
-			c.gridwidth = 1;
+			JCheckBox checkboxFactionNP = new JCheckBox(bot.Factions[i].Name + " NP");
+			checkboxFactionNP.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
+					faction.NonPlayer = ((JCheckBox) e.getSource()).isSelected();
+				}
+			});
+			panel.add(checkboxFactionNP);
 			
-			JPanel[] buttonPanels = new JPanel[4];
-			
-			for (int i = 0; i < 4; i++) {
-				buttonPanels[i] = new JPanel();
-				buttonPanels[i].setLayout(new BoxLayout(buttonPanels[i], BoxLayout.Y_AXIS));
-				if (i == 3)
-					c.gridwidth = GridBagConstraints.REMAINDER;
-				gridbag.setConstraints(buttonPanels[i], c);
-				add(buttonPanels[i]);
-			}
-			
-			// TODO: botCombo.addActionListener(this);
-			
-			// TODO: actionPerformed(null);
+			for (int j = 0; j < bot.Factions[i].Actions.length; j++)
+				panel.add(makeButton(bot.Factions[i].Actions[j], bot.Factions[i].Id + ":" + bot.Factions[i].Actions[j]));
 		}
-		catch (Exception ex) {
-			WriteLine("ERROR! " + ex.getMessage());
-		}
-		
+			
 		// game specific override
 		
 		initGameComponents();
 		
 		// location
 		
-		int x = getX();
-		int y = getY();
-		x = x + ((getWidth() - 520) / 2);
-		y = y + ((getHeight() - 135) / 2);
-		if (x < 15)
-			x = 15;
-		if (y < 15)
-			y = 15;
-		setSize(520, getHeight()); // TODO: was 110 for 1 row of buttons!
+		int x = getX() + ((getWidth() - 520) / 2);
+		int y = getY() + ((getHeight() - 135) / 2);
+		if (x < 15) x = 15;
+		if (y < 15) y = 15;
 		setLocation(x, y);
-		
 		setLocationRelativeTo(getOwner());
+		
+		getContentPane().setPreferredSize(new Dimension(bot.windowSize[0], bot.windowSize[1]));
+		pack();
 	}
 	
-	private JButton makeButton(String name, GridBagLayout gridbag, GridBagConstraints c) {
+	private JButton makeButton(String name, final String id) {
 		JButton button = new JButton(name);
-		gridbag.setConstraints(button, c);
 		button.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				aiButtonActionPerformed(e);
+				aiButtonActionPerformed(id);
 			}
 		});
-		add(button);
 		return button;
 	}
 	
-	private JCheckBox makeCheckBox(String name, GridBagLayout gridbag, GridBagConstraints c) {
-		JCheckBox button = new JCheckBox(name);
-		button.setSelected(true);
-		gridbag.setConstraints(button, c);
-		add(button);
-		return button;
-	}
-	
-	private void aiButtonActionPerformed(ActionEvent e) {
-		String aiButtonName = ((JButton)e.getSource()).getText();
-		int winterCount = 0;
-
-		ArrayList<ZoneIndex> zones = new ArrayList<ZoneIndex>();
-
+	private void aiButtonActionPerformed(String id) {
+		// check that a game is available, otherwise ask use to load first
+		
 		GameState myGameState = mod.getGameState();
-
-		Collection<GameComponent> comps = myGameState.getGameComponents();
-
-		Iterator<GameComponent> zoneIterator = comps.iterator();
-
+		Iterator<GamePiece> pieceIterator = myGameState.getAllPieces().iterator();
+		
+		if (!pieceIterator.hasNext()) {
+			WriteLine("Please load a game first");
+			return;
+		}
+		
+		ArrayList<ZoneIndex> zones = new ArrayList<ZoneIndex>();
+		Iterator<GameComponent> zoneIterator = myGameState.getGameComponents().iterator();
+		
 		do {
 			GameComponent comp = zoneIterator.next();
 			
 			if (comp instanceof Zone) {
 				Zone zone = (Zone) comp;
 				zones.add(new ZoneIndex(zone.getName(), zone));
-
-//			} else {
-//				WriteLine("Game Component: "+comp.toString());
-//				WriteLine("Component: " +
-//				comp.getClass().toString());
 			}
 		} while (zoneIterator.hasNext());
-
-		ArrayList<ZonePiece> offboard = new ArrayList<ZonePiece>();
-		Collection<GamePiece> pieces = myGameState.getAllPieces();
-		Iterator<GamePiece> pieceIterator = pieces.iterator();
 		
-		if (!pieceIterator.hasNext()) {
-			WriteLine("Please load a game first");
-			return;
-		}
-
-		do {
-			GamePiece piece = pieceIterator.next();
-
-			String mapName = "?";
-			if (piece.getMap() != null) {
-				mapName = piece.getMap().getMapName();
-			}
-			
-			String pieceName = piece.getName();
-			Point position = piece.getPosition();
-			
-//			if (pieceName.indexOf(" Eligibility") > -1) {
-//				WriteLine("...Piece: " + pieceName + " ( " +
-//				position.x + ", " + position.y + " ) [ " +
-//				piece.getClass() + " ] on MAP: " + mapName);
-//			
-//				WriteLine(piece.getType());
-//				WriteLine("Stack" + (piece instanceof Stack));
-//			}
-			
-			if (!(piece instanceof Deck) && !(piece instanceof Stack) && (!pieceName.equals("?")) && (pieceName.length() > 0)) {
-				
-				// Joel has named "Roman Ally" -> "Germanic Ally" instead in the module, so we need to check for the name of the PNG image
-				if (pieceName.indexOf("Germanic Ally") != -1) {
-					Object inner = Decorator.getInnermost(piece);
-					if (inner != null && inner instanceof BasicPiece) {
-						BasicPiece basic = (BasicPiece) inner;
-						if (basic.getType().indexOf(";;;Roman Ally.png") > -1) {
-							// change pieceName from Germanic Ally to Roman Ally
-							pieceName = "Roman Ally";
-						}
-					}
-				}
-				
-				// set the population from property
-				if (pieceName.indexOf(" Pop") == 1) { // 1 Pop, 2 Pop, 3 Pop
-					// population token, check for control
-					int control = Integer.parseInt(((DynamicProperty)piece).getProperty("ControlValue").toString());
-					switch (control) {
-					case 2:
-						pieceName += " (AeduiControl)";
-						break;
-					case 3:
-						pieceName += " (ArverniControl)";
-						break;
-					case 4:
-						pieceName += " (BelgicControl)";
-						break;
-					case 5:
-						pieceName += " (GermanControl)";
-						break;
-					case 6:
-						pieceName += " (RomanControl)";
-						break;
-					case 1:
-						pieceName += " (NoControl)";
-						break;
-					}
-				}
-				
-				// check for Dispersed (TribeState)
-				try {
-					int tribeState = Integer.parseInt(piece.getProperty("TribeState").toString());
-					switch (tribeState) {
-					case 3:
-						pieceName += " (Dispersed)";
-						break;
-					case 2:
-						pieceName += " (Gathering)";
-						break;
-					}
-				}
-				catch (Exception ex2) {}
-				
-				// check for Available Forces DummyState
-				try {
-					int tribeState = Integer.parseInt(piece.getProperty("DummyState").toString());
-					switch (tribeState) {
-					case 2:
-						pieceName += " (Empty)";
-						break;
-					case 3:
-						pieceName += " (Ally)";
-						break;
-					case 1:
-						pieceName += " (Occupied)";
-						break;
-					}
-				}
-				catch (Exception ex3) {}
-				
-				boolean foundZone = false;
-				
-				for (int i = 0; i < zones.size(); i++) {
-					ZoneIndex zi = zones.get(i);
-					Zone z = zi.zone;
-					
-					Point piecePosition = piece.getPosition();
-					piecePosition.translate(-1 * zi.offsetX, -1 * zi.offsetY);
-					
-					if (z.contains(piecePosition) && zi.map.equals(mapName)) {
-						zi.pieces.add(new ZonePiece(pieceName, position));
-						foundZone = true;
-						break;
-					}
-				}
-				
-				if (!foundZone && mapName.equals("Main Map")) {
-					offboard.add(new ZonePiece(pieceName, position));
-				}
-			} else if (piece instanceof Deck) {
-				Deck deck = (Deck) piece;
-				String deckName = deck.getDeckName();
-				if (deckName.equals("Deck")) {
-					for (int d = 0; d < deck.getPieceCount(); d++) {
-						String cardObject = deck.getPieceAt(d).toString();
-						if (cardObject.indexOf(" - Winter.jpg;7") > -1) winterCount++;
-					}
-				}
-			}
-		} while (pieceIterator.hasNext());
+		PiecesGameState piecesGameState = gatherGamePieces(zones);
 
 		StringBuilder json = new StringBuilder();
-//		json.append("{");
-//		json.append("\"npaedui\": " + aeduiNPBox.isSelected() + ", ");
-//		json.append("\"nparverni\": " + arverniNPBox.isSelected() + ", ");
-//		json.append("\"nproman\": " + romanNPBox.isSelected() + ", ");
-//		json.append("\"npbelgic\": " + belgicNPBox.isSelected() + ", ");
+		json.append("{");
+		json.append("\"action\": \"" + id + "\", ");
+		for (int i = 0; i < bot.Factions.length; i++) {
+			json.append("\"np" + bot.Factions[i].Id + "\": " + bot.Factions[i].NonPlayer.toString() + ", ");
+		}
+		String[] attributeKeys = (String[]) piecesGameState.attributes.keySet().toArray();
+		for (int i = 0; i < attributeKeys.length; i++) {
+			String key = attributeKeys[i];
+			String value = piecesGameState.attributes.get(key);
+			json.append("\"" + key.replace("\"", "'") + "\": \"" + value.replace("\"", "'") + "\", ");
+		}
 //		json.append("\"winter\": " + winterCount + ", ");
-//		json.append("\"action\": \"" + aiButtonName + "\", ");
-//		
-//		String jsonString = _botScriptEngine.ConstructJSON(json, offboard, zones);
+		
+		// TODO: bot engine -- String jsonString = _botScriptEngine.ConstructJSON(json, piecesGameState.offboard, piecesGameState.zones);
 //
 //		_botScriptEngine.setVerbose((e.getModifiers() & InputEvent.SHIFT_MASK) != 0);
 //		_botScriptEngine.RunScript(jsonString, aiButtonName);
