@@ -2,6 +2,7 @@ package coin.adp;
 
 import java.util.ArrayList;
 
+import VASSAL.build.module.GameState;
 import coin.*;
 
 public class ADPAIWindow extends AIWindow {
@@ -11,7 +12,7 @@ public class ADPAIWindow extends AIWindow {
 		
 	}
 	
-	protected PiecesGameState gatherGamePieces(ArrayList<ZoneIndex> zones) {
+	protected PiecesGameState gatherGamePieces(GameState myGameState, ArrayList<ZoneIndex> zones) {
 		// TODO: to implement
 		return null;
 	}

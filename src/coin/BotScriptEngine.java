@@ -17,27 +17,15 @@ public class BotScriptEngine {
 	private static GameModule _mod;
 	private static String _coinTitle;
 	private List<BotScriptListener> _listeners;
-	private boolean _verboseMode = false;
-	private ArrayList<String> _factions;
-	private ArrayList<BotConfiguration> _botConfigurations;
-	private int _selectedBot = 0;
 	
-	public void setVerbose(boolean verbose) {
-		_verboseMode = verbose;
-	}
-	
-	public BotScriptEngine(GameModule module, String coinTitle) {
+	private BotPackage _botPackage;
+		
+	public BotScriptEngine(GameModule module, BotPackage botPackage, String coinTitle) {
 		_mod = module;
 		_coinTitle = coinTitle;
+		_botPackage = botPackage;
 		_listeners = new ArrayList<BotScriptListener>();
 		final BotScriptEngine self = this;
-				
-		_factions = new ArrayList<String>();
-		_botConfigurations = new ArrayList<BotConfiguration>();
-		
-		// load bot configuration
-		
-		//loadBots();
 		
 		// respond to question triggers
 		
@@ -93,57 +81,6 @@ public class BotScriptEngine {
 		});
 	}
 	
-	public ArrayList<String> BotFactions() {
-		return _factions;
-	}
-	
-	public ArrayList<BotConfiguration> BotConfigurations() {
-		return _botConfigurations;
-	}
-	
-	public void loadBots() {
-		// load internal bots
-		try {
-	        InputStreamReader botsFile = new InputStreamReader(_mod.getDataArchive().getInputStream("bots.json"));
-	        JSONParser parser = new JSONParser();
-	        JSONObject jsonObject = (JSONObject) parser.parse(botsFile);
-	        botsFile.close();
-	        
-	        JSONArray factions = (JSONArray) jsonObject.get("factions");
-	        for (int i = 0; i < factions.size(); i++) {
-	        	_factions.add((String) factions.get(i));
-	        }
-	        
-	        JSONArray bots = (JSONArray) jsonObject.get("bots");
-	        for (int i = 0; i < bots.size(); i++) {
-	        	JSONObject bot = (JSONObject) bots.get(i);
-	        	BotConfiguration botConf = new BotConfiguration();
-	        	botConf.name = (String) bot.get("name");
-	        	botConf.folder = (String) bot.get("folder");
-	        	JSONArray actions = (JSONArray) bot.get("actions");
-	        	for (int j = 0; j < actions.size(); j++) {
-	        		ArrayList<String> actsArr = new ArrayList<String>();
-	        		JSONArray acts = (JSONArray) actions.get(j);
-	        		for (int k = 0; k < acts.size(); k++) {
-	        			actsArr.add((String) acts.get(k));
-	        		}
-	        		botConf.actions.add(actsArr);
-	        	}
-	        	_botConfigurations.add(botConf);
-	        }
-	    }
-		catch (IOException ex) {
-			WriteLine("IOException on Bots Configuration: " + ex.getMessage());
-			return;
-		} catch (ParseException ex) {
-			WriteLine("ParseException on Bots Configuration: " + ex.getMessage());
-			return;
-		}
-		
-		// load external bots
-		// TODO: load external bots from disk
-	}
-	
 	public synchronized void addBotScriptListener(BotScriptListener l) {
 		_listeners.add(l);
 	}
@@ -161,13 +98,8 @@ public class BotScriptEngine {
 	public String ConstructJSON(StringBuilder json, ArrayList<ZonePiece> offboard, ArrayList<ZoneIndex> zones) {
 		json.append("\"offboard\": [");
 		
-		// int oc = 1;
 		for (int j = 0; j < offboard.size(); j++) {
 			ZonePiece piece = offboard.get(j);
-//			WriteLine(" " + (oc++) + ". " +
-//				piece.name + " ( " +
-//				piece.location.x + ", " +
-//				piece.location.y + " )");
 
 			if (j > 0)
 				json.append(",");
@@ -178,16 +110,9 @@ public class BotScriptEngine {
 		json.append("],");
 		json.append("\"zones\": [");
 
-		// WriteLine("****************************************");
 		for (int i = 0; i < zones.size(); i++) {
 			ZoneIndex zi = zones.get(i);
 			
-//			 WriteLine("*** ZONE: " + zi.name + " ( " +
-//			 zi.zone.getBounds().getMinX() + ", " +
-//			 zi.zone.getBounds().getMinY() + " ; " +
-//			 zi.zone.getBounds().getMaxX() + ", " +
-//			 zi.zone.getBounds().getMaxY() + " )");
-
 			if (i > 0)
 				json.append(",");
 			json.append("{\"name\": \"" + zi.name + "\", \"map\": \"" + zi.map + "\", \"x\": " + zi.offsetX + ", \"y\": " + zi.offsetY + ", \"pieces\": [");
@@ -195,11 +120,6 @@ public class BotScriptEngine {
 			for (int j = 0; j < zi.pieces.size(); j++) {
 				ZonePiece piece = zi.pieces.get(j);
 				
-//				 WriteLine(" " + (zc++) + ". " +
-//				 zi.pieces.get(j).name + " ( " +
-//				 zi.pieces.get(j).location.x + ", " +
-//				 zi.pieces.get(j).location.y + " )");
-
 				if (j > 0)
 					json.append(",");
 				json.append("{\"name\": \"" + piece.name + "\", \"x\": " + piece.location.x
@@ -208,295 +128,115 @@ public class BotScriptEngine {
 
 			json.append("]}");
 		}
-		// WriteLine("****************************************");
 
 		json.append("]}");
 		
 		return json.toString();
 	}
-			
+	
 	private static void WriteLine(String msgLine) {
-		FormattedString cStr = new FormattedString(" -<AI> " + msgLine);
+		WriteLine(msgLine, false);
+	}
+	private static void WriteLine(String msgLine, boolean raw) {
+		FormattedString cStr = new FormattedString((raw ? "" : " - <COINBot> - ") + msgLine);
 		final Command cc = new Chatter.DisplayText(_mod.getChatter(), cStr.getLocalizedText());
 		cc.execute();
 		_mod.sendAndLog(cc);
 	}
 	
-	public void setSelectedBot(int selectedBot) {
-		_selectedBot = selectedBot;
-	}
-	
-	private String botFolder() {
-		return _botConfigurations.get(_selectedBot).folder;
-	}
-	
-	private boolean ContainsJS(String action) {
-		boolean containsJS = false;
-		try {
-			containsJS = _mod.getDataArchive().getInputStream(botFolder() + "/ai-script.js") != null;
-			containsJS = containsJS && _mod.getDataArchive().getInputStream(botFolder() + "/" + action.replaceAll("\\s","") + ".js") != null;
-		} catch (IOException e1) {
-			containsJS = false;
-		}
-		return containsJS;
-	}
-	
-	private boolean ContainsPY() {
-		boolean containsPY = false;
-		try {
-			containsPY = _mod.getDataArchive().getInputStream(botFolder() + "/ai-script.py") != null;
-		} catch (IOException e1) {
-			containsPY = false;
-		}
-		return containsPY;
-	}
-	
 	public void RunScript(String jsonString, String action) {
-		boolean containsJS = ContainsJS(action);
-		if (containsJS) {
-			// try JS
-			RunJS(jsonString, action);
-		}
-		
-		if (ContainsPY()) {
-//			if (containsJS)
-//				WriteLine("");
-			
-			// try Python
-			RunPython(jsonString);
-		}
-	}
-	
-	public void RunScript(Question reply) {
-		boolean containsJS = ContainsJS(reply.faction());
-		if (containsJS) {
-			// try JS
-			RunJS(null, reply.faction(), reply);
-		}
-		
-		if (!containsJS && ContainsPY()) {
-			// try Python
-			RunPython(null, reply);
-		}
-	}
-	
-	private void RunJS(String jsonString, String action) {
 		RunJS(jsonString, action, null);
 	}
 	
-	private void RunJS(String jsonString, String action, Question reply) {
-		ScriptEngineManager manager = new ScriptEngineManager();
-		ScriptEngine engine = manager.getEngineByName("JavaScript");
-
-		Reader readerJsonLib = null;
-		Reader readerPolyfill = null;
-		Reader readerAIScript = null;
-		String fileName = "";
-		StringWriter writer = null;
-		boolean bError = false;
-		
-		try {
-			writer = new StringWriter();
-			PrintWriter pw = new PrintWriter(writer, true);
-			engine.getContext().setWriter(pw);
-			
-		    // ***
-			
-			fileName = "json2.js";
-			readerJsonLib = new InputStreamReader(_mod.getDataArchive().getInputStream(botFolder() + "/" + fileName));
-			engine.eval(readerJsonLib);
-			
-			fileName = "polyfill.js";
-			readerPolyfill = new InputStreamReader(_mod.getDataArchive().getInputStream(botFolder() + "/" + fileName));
-			engine.eval(readerPolyfill);
-			
-			fileName = "ai-tools.js";
-			readerPolyfill = new InputStreamReader(_mod.getDataArchive().getInputStream(botFolder() + "/" + fileName));
-			engine.eval(readerPolyfill);
-			
-			fileName = action.replaceAll("\\s","") + ".js";
-			readerPolyfill = new InputStreamReader(_mod.getDataArchive().getInputStream(botFolder() + "/" + fileName));
-			engine.eval(readerPolyfill);
-			
-			fileName = "";
-			engine.eval("isvassal = true;");
-			engine.eval("inputString = '" + (reply == null ? jsonString : reply.datafile()) + "';");
-			if (reply != null) engine.eval("answer = '" + reply.toJSONReply().replaceAll("'", "\\'") + "';");
-			
-			fileName = "ai-script.js";
-			readerAIScript = new InputStreamReader(_mod.getDataArchive().getInputStream(botFolder() + "/" + fileName));
-			engine.eval(readerAIScript);
-			
-		} catch (ScriptException e1) {
-			bError = true;
-			WriteLine("JavaScript Engine Exception");
-			WriteLine("DUMPING ALL SCRIPT OUTPUT:");
-			WriteBuffer(writer.getBuffer());
-			WriteLine("---");
-			WriteLine("JavaScript Exception – " + fileName + ", line " + e1.getLineNumber() + " :: " + e1.getMessage());
-			e1.printStackTrace();
-			
-		} catch (FileNotFoundException e1) {
-			WriteLine("FileNotFoundException " + e1.toString());
-			e1.printStackTrace();
-		} catch (IOException e1) {
-			WriteLine("I/O Exception " + e1.toString());
-			e1.printStackTrace();
-		} finally {
-			if (readerJsonLib != null) {
-				try {
-					readerJsonLib.close();
-				} catch (IOException e1) {
-					//e1.printStackTrace();
-				}
-			}
-			if (readerPolyfill != null) {
-				try {
-					readerPolyfill.close();
-				} catch (IOException e1) {
-					//e1.printStackTrace();
-				}
-			}
-			if (readerAIScript != null) {
-				try {
-					readerAIScript.close();
-				} catch (IOException e1) {
-					//e1.printStackTrace();
-				}
-			}
-		}
-		
-		if (!bError && _verboseMode) {
-			WriteLine("VERBOSE MODE ACTIVATED:");
-			WriteBuffer(writer.getBuffer());
-		} else {
-			try {
-				Object output = engine.get("msg");
-				if (output.toString().startsWith("sun.org.mozilla.javascript.internal.NativeArray")) {
-					try {
-						engine.eval("joinMsg();");
-					} catch (ScriptException e) {
-					}
-					output = engine.get("msg");
-				}
-				if (output != null && !output.toString().startsWith("sun.org.mozilla.javascript.internal.NativeArray")) {
-					String msgs = output.toString();
-					String[] msg = msgs.split("\n");
-					for (int i = 0; i < msg.length; i++) {
-						processMessageLine(msg[i], engine);
-					}
-				}
-			}
-			catch (Exception ex) {
-				
-			}
-		}
-	}
-	
-	private void WriteBuffer(StringBuffer sb) {
-		String[] sbs = sb.toString().split("\n");
-		for (int i = 0; i < sbs.length; i++)
-			WriteLine("% " + sbs[i]);
-	}
-	
-	private void RunPython(String jsonString) {
-		RunPython(jsonString, null);
-	}
-	
-	private void RunPython(String jsonString, Question reply) {
-		final File scriptFile;
-		final File dataFile;
-		final File replyFile;
-		String scriptFilePath = "";
-		String dataFilePath = "";
-		String replyFilePath = "";
-		try {
-	        scriptFile = File.createTempFile("ai-script-", ".py");
-	        scriptFile.deleteOnExit();
-	        InputStreamReader in = new InputStreamReader(_mod.getDataArchive().getInputStream(botFolder() + "/ai-script.py"));
-	        FileOutputStream out = new FileOutputStream(scriptFile);
-	        IOUtils.copy(in, out);
-	        scriptFilePath = scriptFile.getPath();
-	        
-	        if (jsonString != null) {
-	        	dataFile = File.createTempFile("ai-script-", ".json");
-	        	dataFile.deleteOnExit();
-	        	PrintWriter sout = new PrintWriter(dataFile);
-	        	sout.write(jsonString);
-	        	sout.close();
-	        	dataFilePath = dataFile.getPath();
-	        } else {
-	        	dataFilePath = reply.datafile();
-	        	
-	        	replyFile = File.createTempFile("ai-reply-", ".json");
-	        	replyFile.deleteOnExit();
-	        	PrintWriter sout = new PrintWriter(replyFile);
-	        	sout.write(reply.toJSONReply());
-	        	sout.close();
-	        	replyFilePath = replyFile.getPath();
-	        }
-	    }
-		catch (IOException ex) {
-			WriteLine("IOException on Python: " + ex.getMessage());
+	public void RunScript(Question reply) {
+		if (reply == null) {
+			WriteLine(" - ERROR: there is no valid reply to continue the bot script execution; Abort");
 			return;
 		}
 		
+		String jsonData = reply.jsonData();
+		if (jsonData == null || jsonData.trim().length() <= 0) {
+			WriteLine(" - ERROR: did not get or unable to read valid gamestate from bot script; Abort");
+			return;
+		}
+		
+		RunJS(reply.jsonData(), reply.faction(), reply);
+	}
+	
+	private void RunJS(String jsonString, String action, Question reply) {
+		// refresh certain package settings, such as verbosity
+		
+		_botPackage.UpdatePackage();
+		
+		// write temp JSON file with gamestate
+		
+		File temp;
+		try {
+			temp = File.createTempFile("coinbot-", ".json");
+			FileWriter fw = new FileWriter(temp);
+			fw.write(jsonString);
+			fw.close();
+		} catch (IOException ex) {
+			WriteLine(" - ERROR trying to write JSON temp file in RunJS(); Abort");
+			return;
+		}
+		
+		// run the bot script JS
+		
 		final ProcessWithTimeout pwt;
 		final Process p;
-		try {  
-			String commandline = "python " + scriptFilePath + " " + dataFilePath + " true";
-			if (reply != null) {
-				commandline += " " + replyFilePath;
+		try {
+			p = Runtime.getRuntime().exec(new String[] { _botPackage.nodeProcess, _botPackage.mainEntry, "\"" + temp.getAbsolutePath() + "\"", reply == null ? "" : reply.toJSONReply() }, new String[] {}, new File(_botPackage.basePath));
+			pwt = new ProcessWithTimeout(p);
+
+			InputStream stdout = p.getInputStream();
+			InputStreamReader in = new InputStreamReader(stdout);
+			BufferedReader reader = new BufferedReader(in);
+
+			InputStream stderr = p.getErrorStream();
+			InputStreamReader errin = new InputStreamReader(stderr);
+			BufferedReader errreader = new BufferedReader(errin);
+
+			int exitVal = pwt.waitForProcess(6000);
+
+			p.getOutputStream().close();
+
+			if (in.ready()) {
+				String line = null;
+				try {
+					while ((line = reader.readLine()) != null) {
+						processMessageLine(line, null);
+					}
+				} catch (Exception ex) {
+					WriteLine("Exception trying to read script output");
+				}
 			}
-		    p = Runtime.getRuntime().exec(commandline);
-		    pwt = new ProcessWithTimeout(p);
-		    
-		    InputStream stdout = p.getInputStream();
-		    InputStreamReader in = new InputStreamReader(stdout);
-		    BufferedReader reader = new BufferedReader(in);
-		    
-		    InputStream stderr = p.getErrorStream();
-		    InputStreamReader errin = new InputStreamReader(stderr);
-		    BufferedReader errreader = new BufferedReader(errin);
-		    
-		    int exitVal = pwt.waitForProcess(6000);
-		    
-		    p.getOutputStream().close();
-		    
-		    if (in.ready()) {
-		    	String line = null;
-		    	try {
-		    		while ((line = reader.readLine()) != null) {
-		    			processMessageLine(line, null);
-		    		}
-		    	}
-		    	catch (Exception ex) {
-		    		WriteLine("Exception trying to read script output");
-		    	}
-		    }
-		    
-		    if (errin.ready()) {
-		    	String line = null;
-		    	try {
-		    		while ((line = errreader.readLine()) != null) {
-		    			WriteLine(line);
-		    		}
-		    	}
-		    	catch (Exception ex) {
-		    		WriteLine("Exception trying to read script errors");
-		    	}
-		    }
-		    
-		    if (exitVal != 0) {
-		    	if (exitVal == Integer.MIN_VALUE) {
-		    		WriteLine("AI Script Failed due to a Timeout");
-		    		p.destroy();
-		    	} else {
-		    		WriteLine("AI Script Terminated Abnormally (" + exitVal + ")");
-		    	}
-		    }
+
+			if (errin.ready()) {
+				String line = null;
+				try {
+					while ((line = errreader.readLine()) != null) {
+						WriteLine(line);
+					}
+				} catch (Exception ex) {
+					WriteLine("Exception trying to read script errors");
+				}
+			}
+
+			if (exitVal != 0) {
+				if (exitVal == Integer.MIN_VALUE) {
+					WriteLine("AI Script Failed due to a Timeout");
+					p.destroy();
+				} else {
+					WriteLine("AI Script Terminated Abnormally (" + exitVal + ")");
+				}
+			}
 		} catch (Exception e) {
-		    e.printStackTrace();  
+			e.printStackTrace();
+			WriteLine("RunJS() EXCEPTION: " + e.getClass().getSimpleName() + " -- " + e.getMessage());
+			StringWriter sw = new StringWriter();
+			e.printStackTrace(new PrintWriter(sw));
+			WriteLine(sw.toString());
 		} finally {
 			
 		}
@@ -525,8 +265,10 @@ public class BotScriptEngine {
 				WriteLine("JSON: " + ex.toString());
 				WriteLine(line);
 			}
-		} else {
-			WriteLine(line);
+		} else if (line.startsWith("M*")) {
+			WriteLine(line.substring(2));
+		} else if (_botPackage.verboseOutput) {
+			WriteLine(line, true);
 		}
 	}
 }

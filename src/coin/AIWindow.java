@@ -14,14 +14,14 @@ import VASSAL.build.module.GameState;
 import VASSAL.build.module.map.boardPicker.board.mapgrid.Zone;
 import VASSAL.command.Command;
 import VASSAL.counters.*;
-import VASSAL.counters.Stack;
 import VASSAL.tools.FormattedString;
 
 public abstract class AIWindow extends JDialog implements IAIWindow {
 	private static final long serialVersionUID = 1L;
 
 	protected BotPackage bot;
-	final static GameModule mod = GameModule.getGameModule();
+	protected final static GameModule mod = GameModule.getGameModule();
+	protected BotScriptEngine scriptEngine;
 	
 	protected AIWindow() {
 		super(mod.getFrame());
@@ -38,7 +38,7 @@ public abstract class AIWindow extends JDialog implements IAIWindow {
 	
 	protected abstract void initGameComponents();
 	public abstract String getModuleTitle();
-	protected abstract PiecesGameState gatherGamePieces(ArrayList<ZoneIndex> zones);
+	protected abstract PiecesGameState gatherGamePieces(GameState myGameState, ArrayList<ZoneIndex> zones);
 	
 	protected void WriteLine(String msgLine) {
 		FormattedString cStr = new FormattedString(" - <COINBot> - " + msgLine);
@@ -48,8 +48,17 @@ public abstract class AIWindow extends JDialog implements IAIWindow {
 	}
 
 	public void initComponents(final BotPackage botPackage) {
+		// set bot package info (package.json)
 		bot = botPackage;
+		
+		// remove previous components (if any)
 		getContentPane().removeAll();
+		
+		// set bot script engine
+		
+		scriptEngine = new BotScriptEngine(mod, botPackage, getModuleTitle());
+		
+		// set up UI for any COIN title
 		
 		getContentPane().setLayout(new BorderLayout(2, 2));
 		
@@ -135,7 +144,7 @@ public abstract class AIWindow extends JDialog implements IAIWindow {
 			}
 		} while (zoneIterator.hasNext());
 		
-		PiecesGameState piecesGameState = gatherGamePieces(zones);
+		PiecesGameState piecesGameState = gatherGamePieces(myGameState, zones);
 
 		StringBuilder json = new StringBuilder();
 		json.append("{");
@@ -143,17 +152,15 @@ public abstract class AIWindow extends JDialog implements IAIWindow {
 		for (int i = 0; i < bot.Factions.length; i++) {
 			json.append("\"np" + bot.Factions[i].Id + "\": " + bot.Factions[i].NonPlayer.toString() + ", ");
 		}
-		String[] attributeKeys = (String[]) piecesGameState.attributes.keySet().toArray();
-		for (int i = 0; i < attributeKeys.length; i++) {
-			String key = attributeKeys[i];
+		Iterator<String> keyIterator = piecesGameState.attributes.keySet().iterator();
+		while (keyIterator.hasNext()) {
+			String key = keyIterator.next();
 			String value = piecesGameState.attributes.get(key);
 			json.append("\"" + key.replace("\"", "'") + "\": \"" + value.replace("\"", "'") + "\", ");
 		}
-//		json.append("\"winter\": " + winterCount + ", ");
 		
-		// TODO: bot engine -- String jsonString = _botScriptEngine.ConstructJSON(json, piecesGameState.offboard, piecesGameState.zones);
-//
-//		_botScriptEngine.setVerbose((e.getModifiers() & InputEvent.SHIFT_MASK) != 0);
-//		_botScriptEngine.RunScript(jsonString, aiButtonName);
+		String jsonString = scriptEngine.ConstructJSON(json, piecesGameState.offboard, piecesGameState.zones);
+
+		scriptEngine.RunScript(jsonString, id);
 	}
 }
