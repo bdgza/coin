@@ -2,8 +2,6 @@ package coin;
 
 import java.awt.event.ActionListener;
 import java.io.*;
-import java.net.URISyntaxException;
-import java.util.concurrent.TimeUnit;
 import javax.swing.JDialog;
 
 import VASSAL.build.AbstractConfigurable;
@@ -34,8 +32,6 @@ public class COINBot extends AbstractConfigurable {
 	public static final String ICON = "icon"; //$NON-NLS-1$
 	public static final String BUTTON_TEXT = "buttonText"; //$NON-NLS-1$
 	public static final String TOOLTIP = "tooltip"; //$NON-NLS-1$
-
-	private String nodeProcess = "node";
 
 	public COINBot() throws IOException {
 		ActionListener al = new ActionListener() {
@@ -79,8 +75,6 @@ public class COINBot extends AbstractConfigurable {
 
 		if (botPackage.GetBotType().equals("JS")) {
 			DetectNodeLocation();
-
-			RunHelloWorld(botPackage.basePath);
 		}
 		
 		// load components for COINBot AIWindow
@@ -88,6 +82,7 @@ public class COINBot extends AbstractConfigurable {
 		aiWindow.initComponents(botPackage);
 	}
 	
+	@SuppressWarnings("unused")
 	private String join(String[] array) {
 		String s = "";
 		for (int i = 0; i < array.length; i++) {
@@ -107,16 +102,16 @@ public class COINBot extends AbstractConfigurable {
 			fw.close();
 		} catch (IOException ex) {
 			WriteLine(" - ERROR trying to detect path to Node; COINBot will likely not function");
-			nodeProcess = "";
+			botPackage.nodeProcess = "";
 			return;
 		}
 
 		// try: node
 
-		nodeProcess = "node";
+		botPackage.nodeProcess = "node";
 
 		try {
-			final Process p = Runtime.getRuntime().exec(new String[] { nodeProcess, temp.getName() }, new String[] {}, temp.getParentFile());
+			final Process p = Runtime.getRuntime().exec(new String[] { botPackage.nodeProcess, temp.getName() }, new String[] {}, temp.getParentFile());
 			final ProcessWithTimeout pwt = new ProcessWithTimeout(p);
 
 			InputStream stdout = p.getInputStream();
@@ -140,10 +135,10 @@ public class COINBot extends AbstractConfigurable {
 
 		// try: /usr/local/bin/node
 
-		nodeProcess = "/usr/local/bin/node";
+		botPackage.nodeProcess = "/usr/local/bin/node";
 
 		try {
-			final Process p = Runtime.getRuntime().exec(new String[] { nodeProcess, temp.getName() }, new String[] {}, temp.getParentFile());
+			final Process p = Runtime.getRuntime().exec(new String[] { botPackage.nodeProcess, temp.getName() }, new String[] {}, temp.getParentFile());
 			final ProcessWithTimeout pwt = new ProcessWithTimeout(p);
 
 			InputStream stdout = p.getInputStream();
@@ -165,7 +160,7 @@ public class COINBot extends AbstractConfigurable {
 			e.printStackTrace();
 		}
 
-		nodeProcess = "";
+		botPackage.nodeProcess = "";
 		WriteLine(" - Could not find path to node; COINBot will likely not function for this JavaScript bot");
 	}
 
@@ -186,67 +181,11 @@ public class COINBot extends AbstractConfigurable {
 
 			botPackage = new BotPackage(jsonObject);
 			botPackage.basePath = baseBotPath;
+			botPackage.packageFile = packagePath;
 		} catch (Exception ex) {
 			ex.printStackTrace();
 			botPackage = null;
 			WriteLine(" - ERROR loading bot package file; COINBot will not function");
-		}
-	}
-	
-	private void RunHelloWorld(String baseBotPath) {
-		final ProcessWithTimeout pwt;
-		final Process p;
-		try {
-			p = Runtime.getRuntime().exec(new String[] { nodeProcess, "bot.js" }, new String[] {}, new File(baseBotPath));
-			pwt = new ProcessWithTimeout(p);
-
-			InputStream stdout = p.getInputStream();
-			InputStreamReader in = new InputStreamReader(stdout);
-			BufferedReader reader = new BufferedReader(in);
-
-			InputStream stderr = p.getErrorStream();
-			InputStreamReader errin = new InputStreamReader(stderr);
-			BufferedReader errreader = new BufferedReader(errin);
-
-			int exitVal = pwt.waitForProcess(6000);
-
-			p.getOutputStream().close();
-
-			if (in.ready()) {
-				String line = null;
-				try {
-					while ((line = reader.readLine()) != null) {
-						WriteLine(" - <COINBot> - " + line);
-						// processMessageLine(line, null);
-					}
-				} catch (Exception ex) {
-					WriteLine("Exception trying to read script output");
-				}
-			}
-
-			if (errin.ready()) {
-				String line = null;
-				try {
-					while ((line = errreader.readLine()) != null) {
-						WriteLine(line);
-					}
-				} catch (Exception ex) {
-					WriteLine("Exception trying to read script errors");
-				}
-			}
-
-			if (exitVal != 0) {
-				if (exitVal == Integer.MIN_VALUE) {
-					WriteLine("AI Script Failed due to a Timeout");
-					p.destroy();
-				} else {
-					WriteLine("AI Script Terminated Abnormally (" + exitVal + ")");
-				}
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		} finally {
-
 		}
 	}
 
