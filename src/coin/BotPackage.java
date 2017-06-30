@@ -1,6 +1,11 @@
 package coin;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
+
 import org.json.simple.*;
+import org.json.simple.parser.JSONParser;
 
 public class BotPackage {
 	public String name = "";
@@ -9,22 +14,25 @@ public class BotPackage {
 	public String mainEntry = "";
 	public String basePath = "";
 	public int[] windowSize = new int[] { 300, 150 };
+	public String nodeProcess = "";
+	public boolean verboseOutput = false;
 	
 	public String[] Actions = new String[0];
 	public Faction[] Factions = new Faction[0];
+	public String packageFile = "";
 	
-	public BotPackage(JSONObject packageFile) {
-		if (packageFile.containsKey("name"))
-			name = packageFile.get("name").toString();
-		if (packageFile.containsKey("description"))
-			description = packageFile.get("description").toString();
-		if (packageFile.containsKey("version"))
-			version = packageFile.get("version").toString();
-		if (packageFile.containsKey("main"))
-			mainEntry = packageFile.get("main").toString();
+	public BotPackage(JSONObject packageJson) {
+		if (packageJson.containsKey("name"))
+			name = packageJson.get("name").toString();
+		if (packageJson.containsKey("description"))
+			description = packageJson.get("description").toString();
+		if (packageJson.containsKey("version"))
+			version = packageJson.get("version").toString();
+		if (packageJson.containsKey("main"))
+			mainEntry = packageJson.get("main").toString();
 		
-		if (packageFile.containsKey("coinbot")) {
-			JSONObject coinbot = (JSONObject) packageFile.get("coinbot");
+		if (packageJson.containsKey("coinbot")) {
+			JSONObject coinbot = (JSONObject) packageJson.get("coinbot");
 			if (coinbot.containsKey("windowsize")) {
 				JSONArray size = (JSONArray) coinbot.get("windowsize");
 				for (int i = 0; i < 2; i++)
@@ -46,10 +54,31 @@ public class BotPackage {
 			for (int i = 0; i < factions.size(); i++) {
 				Factions[i] = new Faction((JSONObject) factions.get(i));
 			}
+			
+			if (coinbot.containsKey("verbose"))
+				verboseOutput = coinbot.get("verbose").toString().toLowerCase() == "true";
 		}
 		
 		if (windowSize[0] < 60) windowSize[0] = 60;
 		if (windowSize[0] < 30) windowSize[1] = 30;
+	}
+	
+	public void UpdatePackage() {
+		try {
+			InputStreamReader packageStream = new InputStreamReader(new FileInputStream(packageFile));
+			JSONParser parser = new JSONParser();
+			JSONObject packageJson = (JSONObject) parser.parse(packageStream);
+			packageStream.close();
+			
+			if (packageJson.containsKey("coinbot")) {
+				JSONObject coinbot = (JSONObject) packageJson.get("coinbot");
+				
+				if (coinbot.containsKey("verbose"))
+					verboseOutput = coinbot.get("verbose").toString().toLowerCase() == "true";
+			}
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
 	}
 	
 	public String GetBotType() {
