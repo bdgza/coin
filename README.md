@@ -3,15 +3,21 @@ Java code for COIN VASSAL extensions to interface with a bot script.
 
 See:
 + https://github.com/bdgza/ADPBot
-+ https://github.com/autonm/FS
++ https://github.com/bdgza/FallingSkyBot
+
+COIN games published by GMT Games (http://www.gmtgames.com/c-36-coin-series.aspx).
+
+### Source
+
+Includes JSON Simple: https://github.com/fangyidong/json-simple
 
 ### Dependencies
 
-Requires JSON Simple: https://github.com/fangyidong/json-simple
+JavaScript bots require installation of NodeJS (https://nodejs.org/en/download/).
 
 ### Java
 
-These classes use the Java ScriptEngine for JavaScript available from Java SE 7 or later. This means these classes are not compatible with all versions of Java supported by VASSAL.
+...
 
 ### VASSAL
 

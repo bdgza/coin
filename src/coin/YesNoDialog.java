@@ -9,11 +9,11 @@ import java.awt.event.ActionListener;
 
 import javax.swing.JButton;
 import javax.swing.JDialog;
-import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
 public class YesNoDialog extends JDialog {
+	private static final long serialVersionUID = 1L;
 	public String reply = "";
 	
 	public YesNoDialog(Window parent, String coinTitle, Question question) {

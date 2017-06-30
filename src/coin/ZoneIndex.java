@@ -1,10 +1,6 @@
 package coin;
 
-import java.awt.Shape;
 import java.util.ArrayList;
-
-import org.apache.commons.io.input.NullReader;
-
 import VASSAL.build.module.map.boardPicker.board.mapgrid.Zone;
 
 public class ZoneIndex {
