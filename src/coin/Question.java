@@ -1,5 +1,12 @@
 package coin;
 
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+
 import org.json.simple.JSONObject;
 
 public class Question {
@@ -14,6 +21,7 @@ public class Question {
 	private String _datafile;
 	private String _reply;
 	private String _options;
+	private String _jsonString;
 	
 	public Question(String faction, String questionType, String q, String question, String datafile, String options) {
 		_faction = faction;
@@ -22,6 +30,24 @@ public class Question {
 		_question = question;
 		_datafile = datafile;
 		_options = options;
+		
+		InputStream is;
+		try {
+			is = new FileInputStream("manifest.mf");
+			BufferedReader buf = new BufferedReader(new InputStreamReader(is));
+			String line = buf.readLine(); StringBuilder sb = new StringBuilder();
+			while (line != null) {
+				sb.append(line).append("\n");
+				line = buf.readLine();
+			}
+			_jsonString = sb.toString();
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
 	public void setReply(String reply) {
@@ -63,5 +89,9 @@ public class Question {
 		json.put("options", options());
 		json.put("reply", reply());
 		return json.toJSONString();
+	}
+	
+	public String jsonData() {
+		return _jsonString;
 	}
 }
