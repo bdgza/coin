@@ -151,4 +151,8 @@ public class FSAIWindow extends AIWindow {
 	public String getModuleTitle() {
 		return "Falling Sky";
 	}
+
+	protected void UpdateUIState() {
+		
+	}
 }

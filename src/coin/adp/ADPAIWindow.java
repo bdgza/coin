@@ -21,4 +21,10 @@ public class ADPAIWindow extends AIWindow {
 		return "A Distant Plain";
 	}
 
+	@Override
+	protected void UpdateUIState() {
+		// TODO Auto-generated method stub
+		
+	}
+
 }

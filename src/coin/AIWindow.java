@@ -39,6 +39,7 @@ public abstract class AIWindow extends JDialog implements IAIWindow {
 	protected abstract void initGameComponents();
 	public abstract String getModuleTitle();
 	protected abstract PiecesGameState gatherGamePieces(GameState myGameState, ArrayList<ZoneIndex> zones);
+	protected abstract void UpdateUIState();
 	
 	protected void WriteLine(String msgLine) {
 		FormattedString cStr = new FormattedString(" - <COINBot> - " + msgLine);
@@ -83,11 +84,17 @@ public abstract class AIWindow extends JDialog implements IAIWindow {
 			panel.setLayout(new FlowLayout(FlowLayout.CENTER, 2, 2));
 			
 			JCheckBox checkboxFactionNP = new JCheckBox(bot.Factions[i].Name + " NP");
-			checkboxFactionNP.addActionListener(new ActionListener() {
-				public void actionPerformed(ActionEvent e) {
-					faction.NonPlayer = ((JCheckBox) e.getSource()).isSelected();
-				}
-			});
+			checkboxFactionNP.setSelected(bot.Factions[i].NonPlayerSelected);
+			if (bot.Factions[i].NonPlayerFixed) {
+				checkboxFactionNP.setEnabled(false);
+			} else {
+				checkboxFactionNP.addActionListener(new ActionListener() {
+					public void actionPerformed(ActionEvent e) {
+						faction.NonPlayerSelected = ((JCheckBox) e.getSource()).isSelected();
+						UpdateUIState();
+					}
+				});
+			}
 			panel.add(checkboxFactionNP);
 			
 			for (int j = 0; j < bot.Factions[i].Actions.length; j++)
@@ -150,7 +157,7 @@ public abstract class AIWindow extends JDialog implements IAIWindow {
 		json.append("{");
 		json.append("\"action\": \"" + id + "\", ");
 		for (int i = 0; i < bot.Factions.length; i++) {
-			json.append("\"np" + bot.Factions[i].Id + "\": " + bot.Factions[i].NonPlayer.toString() + ", ");
+			json.append("\"np" + bot.Factions[i].Id + "\": " + bot.Factions[i].NonPlayerSelected.toString() + ", ");
 		}
 		Iterator<String> keyIterator = piecesGameState.attributes.keySet().iterator();
 		while (keyIterator.hasNext()) {

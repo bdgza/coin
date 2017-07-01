@@ -6,7 +6,8 @@ public class Faction {
 	public String Id;
 	public String Name;
 	public String[] Actions;
-	public Boolean NonPlayer = false;
+	public Boolean NonPlayerSelected = false;
+	public Boolean NonPlayerFixed = false;
 	
 	public Faction() {
 		
@@ -22,6 +23,10 @@ public class Faction {
 			Actions = new String[actions.size()];
 			for (int i = 0; i < actions.size(); i++)
 				Actions[i] = actions.get(i).toString();
+		}
+		if (factionObject.containsKey("np")) {
+			NonPlayerFixed = Boolean.parseBoolean(factionObject.get("np").toString());
+			NonPlayerSelected = NonPlayerFixed;
 		}
 	}
 }
