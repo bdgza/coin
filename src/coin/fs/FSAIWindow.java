@@ -128,7 +128,7 @@ public class FSAIWindow extends AIWindow {
 					}
 				}
 				
-				if (!foundZone && mapName.equals("Main Map")) {
+				if (!foundZone && (mapName.equals("Main Map") || mapName.equals("Cards"))) {
 					gameState.offboard.add(new ZonePiece(pieceName, position));
 				}
 			} else if (piece instanceof Deck) {
