@@ -186,6 +186,8 @@ public class BotScriptEngine {
 		final ProcessWithTimeout pwt;
 		final Process p;
 		try {
+			if (_botPackage.verboseOutput) WriteLine("GameState: " + temp.getAbsolutePath(), true);
+			
 			p = Runtime.getRuntime().exec(new String[] { _botPackage.nodeProcess, _botPackage.mainEntry, "\"" + temp.getAbsolutePath() + "\"", reply == null ? "" : reply.toJSONReply() }, new String[] {}, new File(_botPackage.basePath));
 			pwt = new ProcessWithTimeout(p);
 
