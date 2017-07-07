@@ -155,6 +155,7 @@ public abstract class AIWindow extends JDialog implements IAIWindow {
 
 		StringBuilder json = new StringBuilder();
 		json.append("{");
+		json.append("\"vassal\": true, ");
 		json.append("\"action\": \"" + id + "\", ");
 		for (int i = 0; i < bot.Factions.length; i++) {
 			json.append("\"np" + bot.Factions[i].Id + "\": " + bot.Factions[i].NonPlayerSelected.toString() + ", ");
