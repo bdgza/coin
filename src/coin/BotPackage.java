@@ -16,6 +16,7 @@ public class BotPackage {
 	public int[] windowSize = new int[] { 300, 150 };
 	public String nodeProcess = "";
 	public boolean verboseOutput = false;
+	public String[] supportedVersions = null;
 	
 	public String[] Actions = new String[0];
 	public Faction[] Factions = new Faction[0];
@@ -53,6 +54,12 @@ public class BotPackage {
 			Factions = new Faction[factions.size()];
 			for (int i = 0; i < factions.size(); i++) {
 				Factions[i] = new Faction((JSONObject) factions.get(i));
+			}
+			if (coinbot.containsKey("supportedversions")) {
+				JSONArray versions = (JSONArray) coinbot.get("supportedversions");
+				supportedVersions = new String[versions.size()];
+				for (int i = 0; i < versions.size(); i++)
+					supportedVersions[i] = versions.get(i).toString();
 			}
 			
 			if (coinbot.containsKey("verbose"))

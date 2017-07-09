@@ -71,6 +71,23 @@ public class COINBot extends AbstractConfigurable {
 //		for (int i = 0; i < botPackage.Factions.length; i++)
 //			WriteLine(" - COINBot faction \"" + botPackage.Factions[i].Name + "\"");
 		
+		// check Bot supports this module version
+		
+		if (botPackage.supportedVersions != null && botPackage.supportedVersions.length > 0) {
+			String version = mod.getGameVersion();
+			Boolean found = false;
+			for (int i = 0; i < botPackage.supportedVersions.length; i++)
+				if (botPackage.supportedVersions[i].equals(version))
+					found = true;
+			
+			if (!found) {
+				WriteLine(" - COINBot Warning: The module version '" + version + "' is not supported by this bot. The bot may not work properly. It is recommended you use a supported version of the module and matching savegames.");
+				WriteLine(" - COINBot bot script supported versions:");
+				for (int i = 0; i < botPackage.supportedVersions.length; i++)
+					WriteLine("     - Module version " + botPackage.supportedVersions[i]);
+			}
+		}
+		
 		// detect Node if bot type is JS
 
 		if (botPackage.GetBotType().equals("JS")) {
