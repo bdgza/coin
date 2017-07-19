@@ -245,11 +245,11 @@ public class BotScriptEngine {
 	}
 	
 	private void processMessageLine(String line, ScriptEngine engine) {
-		if (line.startsWith("{")) {
-			// this is probably a question
+		if (line.startsWith("Q*")) {
+			// this is a question
 			try {
 				JSONParser parser = new JSONParser();
-				JSONObject jsonObject = (JSONObject) parser.parse(line);
+				JSONObject jsonObject = (JSONObject) parser.parse(line.substring(2));
 				String faction = jsonObject.get("faction").toString();
 				String questionType = jsonObject.get("type").toString();
 				String q = jsonObject.get("q").toString();
