@@ -34,7 +34,7 @@ public class BotScriptEngine {
 			public void botScriptEvent(BotScriptEvent event) {
 				if (event.eventType() == BotScriptEvent.EVENTTYPE_QUESTION) {
 					Question question = (Question) event.eventData();
-					WriteLine("# Please answer the question in the dialog: " + question.question());
+					WriteLine("# Please answer the question in the dialog: " + question.question(), " ");
 					
 					if (question.questionType().equals(Question.QUESTION_YESNO)) {
 						YesNoDialog dlg = new YesNoDialog(_mod.getFrame(), _coinTitle, question);
@@ -134,11 +134,11 @@ public class BotScriptEngine {
 		return json.toString();
 	}
 	
-	private static void WriteLine(String msgLine) {
-		WriteLine(msgLine, false);
+	private static void WriteLine(String msgLine, String prefix) {
+		WriteLine(msgLine, prefix, false);
 	}
-	private static void WriteLine(String msgLine, boolean raw) {
-		FormattedString cStr = new FormattedString((raw ? "" : " - <COINBot> - ") + msgLine);
+	private static void WriteLine(String msgLine, String prefix, boolean raw) {
+		FormattedString cStr = new FormattedString((raw ? "" : " " + prefix + " <COINBot> - ") + msgLine);
 		final Command cc = new Chatter.DisplayText(_mod.getChatter(), cStr.getLocalizedText());
 		cc.execute();
 		_mod.sendAndLog(cc);
@@ -150,13 +150,13 @@ public class BotScriptEngine {
 	
 	public void RunScript(Question reply) {
 		if (reply == null) {
-			WriteLine(" - ERROR: there is no valid reply to continue the bot script execution; Abort");
+			WriteLine(" - ERROR: there is no valid reply to continue the bot script execution; Abort", "*");
 			return;
 		}
 		
 		String jsonData = reply.jsonData();
 		if (jsonData == null || jsonData.trim().length() <= 0) {
-			WriteLine(" - ERROR: did not get or unable to read valid gamestate from bot script; Abort");
+			WriteLine(" - ERROR: did not get or unable to read valid gamestate from bot script; Abort", "*");
 			return;
 		}
 		
@@ -177,7 +177,7 @@ public class BotScriptEngine {
 			fw.write(jsonString);
 			fw.close();
 		} catch (IOException ex) {
-			WriteLine(" - ERROR trying to write JSON temp file in RunJS(); Abort");
+			WriteLine(" - ERROR trying to write JSON temp file in RunJS(); Abort", "*");
 			return;
 		}
 		
@@ -186,7 +186,7 @@ public class BotScriptEngine {
 		final ProcessWithTimeout pwt;
 		final Process p;
 		try {
-			if (_botPackage.verboseOutput) WriteLine("GameState: " + temp.getAbsolutePath(), true);
+			if (_botPackage.verboseOutput) WriteLine(" - <GAMESTATE> - " + temp.getAbsolutePath(), "-", true);
 			
 			p = Runtime.getRuntime().exec(new String[] { _botPackage.nodeProcess, _botPackage.mainEntry, "\"" + temp.getAbsolutePath() + "\"", reply == null ? "" : reply.toJSONReply() }, new String[] {}, new File(_botPackage.basePath));
 			pwt = new ProcessWithTimeout(p);
@@ -210,7 +210,7 @@ public class BotScriptEngine {
 						processMessageLine(line, null);
 					}
 				} catch (Exception ex) {
-					WriteLine("Exception trying to read script output");
+					WriteLine("Exception trying to read script output", "*");
 				}
 			}
 
@@ -218,27 +218,27 @@ public class BotScriptEngine {
 				String line = null;
 				try {
 					while ((line = errreader.readLine()) != null) {
-						WriteLine(line);
+						WriteLine(line, "*");
 					}
 				} catch (Exception ex) {
-					WriteLine("Exception trying to read script errors");
+					WriteLine("Exception trying to read script errors", "*");
 				}
 			}
 
 			if (exitVal != 0) {
 				if (exitVal == Integer.MIN_VALUE) {
-					WriteLine("AI Script Failed due to a Timeout");
+					WriteLine("AI Script Failed due to a Timeout", "*");
 					p.destroy();
 				} else {
-					WriteLine("AI Script Terminated Abnormally (" + exitVal + ")");
+					WriteLine("AI Script Terminated Abnormally (" + exitVal + ")", "*");
 				}
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
-			WriteLine("RunJS() EXCEPTION: " + e.getClass().getSimpleName() + " -- " + e.getMessage());
+			WriteLine("RunJS() EXCEPTION: " + e.getClass().getSimpleName() + " -- " + e.getMessage(), "*");
 			StringWriter sw = new StringWriter();
 			e.printStackTrace(new PrintWriter(sw));
-			WriteLine(sw.toString());
+			WriteLine(sw.toString(), " ");
 		} finally {
 			
 		}
@@ -264,13 +264,19 @@ public class BotScriptEngine {
 			}
 			catch (Exception ex)
 			{
-				WriteLine("JSON: " + ex.toString());
-				WriteLine(line);
+				WriteLine("JSON: " + ex.toString(), "*");
+				WriteLine(line, "*");
 			}
 		} else if (line.startsWith("M*")) {
-			WriteLine(line.substring(2));
+			WriteLine(line.substring(2), "*");
+		} else if (line.startsWith("M-")) {
+			WriteLine(line.substring(2), "-");
+		} else if (line.startsWith("M ")) {
+			WriteLine(line.substring(2), " ");
+		} else if (line.startsWith("M=")) {
+			WriteLine(" ", " ", true);
 		} else if (_botPackage.verboseOutput) {
-			WriteLine(line, true);
+			WriteLine(" - <CONSOLE> - " + line, "-", true);
 		}
 	}
 }
