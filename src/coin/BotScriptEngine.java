@@ -19,6 +19,7 @@ public class BotScriptEngine {
 	private List<BotScriptListener> _listeners;
 	
 	private BotPackage _botPackage;
+	private boolean _consoleEchoState = false;
 		
 	public BotScriptEngine(GameModule module, BotPackage botPackage, String coinTitle) {
 		_mod = module;
@@ -160,7 +161,7 @@ public class BotScriptEngine {
 			return;
 		}
 		
-		RunJS(reply.jsonData(), reply.faction(), reply);
+		RunJS(reply.jsonData(), reply.askingFaction(), reply);
 	}
 	
 	private void RunJS(String jsonString, String action, Question reply) {
@@ -210,7 +211,7 @@ public class BotScriptEngine {
 						processMessageLine(line, null);
 					}
 				} catch (Exception ex) {
-					WriteLine("Exception trying to read script output", "*");
+					WriteLine("Exception trying to read script output; " + ex.toString() + ": " + ex.getMessage(), "*");
 				}
 			}
 
@@ -245,26 +246,55 @@ public class BotScriptEngine {
 	}
 	
 	private void processMessageLine(String line, ScriptEngine engine) {
-		if (line.startsWith("Q*")) {
+		if (line.startsWith("@ECHO ")) {
+			String[] parts = line.split(" ");
+			_consoleEchoState = parts.length > 1 && parts[1].trim().toLowerCase().equals("on");
+		} else if (_consoleEchoState) {
+			WriteLine(line, " ");
+		} else if (line.startsWith("Q*")) {
 			// this is a question
+			JSONObject jsonObject = null;
 			try {
 				JSONParser parser = new JSONParser();
-				JSONObject jsonObject = (JSONObject) parser.parse(line.substring(2));
-				String faction = jsonObject.get("faction").toString();
-				String questionType = jsonObject.get("type").toString();
-				String q = jsonObject.get("q").toString();
-				String question = (jsonObject.containsKey("question")) ? jsonObject.get("question").toString() : "?";
-				String datafile = (jsonObject.containsKey("datafile")) ? jsonObject.get("datafile").toString() : "";
-				String options = (jsonObject.containsKey("options")) ? jsonObject.get("options").toString() : "";
-				String gamedata = engine != null ? engine.get("gamedata").toString() : "";
-				if (datafile.length() == 0 && gamedata.length() > 0)
-					datafile = gamedata;
-				
-				_fireBotScriptEvent(new BotScriptEvent(this, BotScriptEvent.EVENTTYPE_QUESTION, new Question(faction, questionType, q, question, datafile, options)));
+				jsonObject = (JSONObject) parser.parse(line.substring(2));
 			}
 			catch (Exception ex)
 			{
-				WriteLine("JSON: " + ex.toString(), "*");
+				WriteLine("ERROR JSON: " + ex.toString() + " -- " + ex.getMessage(), "*");
+				WriteLine(line, "*");
+			}
+			
+			String gamedata = "";
+			Question question = null;
+			BotScriptEvent event = null;
+			
+			try {
+				if (engine != null) {
+					Object gamedataObj = engine.get("gamedata");
+					if (gamedataObj != null)
+						gamedata = gamedataObj.toString();
+				}
+				
+				try {
+					question = new Question(jsonObject, gamedata);
+				}
+				catch (Exception ex) {
+					WriteLine("ERROR PARSING QUESTION: " + ex.toString() + " -- " + ex.getMessage(), "*");
+					WriteLine(line, "*");
+				}
+								
+				event = new BotScriptEvent(this, BotScriptEvent.EVENTTYPE_QUESTION, question);
+			}
+			catch (Exception ex) {
+				WriteLine("ERROR QUESTION: " + ex.toString() + " -- " + ex.getMessage(), "*");
+				WriteLine(line, "*");
+			}
+			
+			try {
+				_fireBotScriptEvent(event);
+			}
+			catch (Exception ex) {
+				WriteLine("FIRING EVENT: " + ex.toString() + " -- " + ex.getMessage(), "*");
 				WriteLine(line, "*");
 			}
 		} else if (line.startsWith("M*")) {

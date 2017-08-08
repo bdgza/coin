@@ -71,7 +71,7 @@ public abstract class AIWindow extends JDialog implements IAIWindow {
 
 		panelActionButtons.setLayout(new FlowLayout(FlowLayout.LEFT, 2, 2));
 		for (int i = 0; i < bot.Actions.length; i++)
-			panelActionButtons.add(makeButton(bot.Actions[i], "action:" + bot.Actions[i]));
+			panelActionButtons.add(makeButton(bot.Actions[i], "action:" + bot.Actions[i].replace(' ', '-')));
 
 		JPanel panelFactions = new JPanel();
 		getContentPane().add(panelFactions);
@@ -102,7 +102,7 @@ public abstract class AIWindow extends JDialog implements IAIWindow {
 
 			for (int j = 0; j < bot.Factions[i].Actions.length; j++)
 				panel.add(
-						makeButton(bot.Factions[i].Actions[j], bot.Factions[i].Id + ":" + bot.Factions[i].Actions[j]));
+						makeButton(bot.Factions[i].Actions[j], bot.Factions[i].Id + ":" + bot.Factions[i].Actions[j].replace(' ', '-')));
 		}
 
 		// game specific override

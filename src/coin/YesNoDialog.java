@@ -19,7 +19,7 @@ public class YesNoDialog extends JDialog {
 	public YesNoDialog(Window parent, String coinTitle, Question question) {
 		super(parent, "", Dialog.ModalityType.MODELESS);
 		
-		String title = coinTitle + " – " + question.faction();
+		String title = "COINBot – " + question.category();
 		this.setTitle(title);
 		this.setMinimumSize(new Dimension(300, 80));
 		
