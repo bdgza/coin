@@ -37,7 +37,20 @@ public class BotScriptEngine {
 					Question question = (Question) event.eventData();
 					WriteLine("# Please answer the question in the dialog: " + question.question(), " ");
 					
-					if (question.questionType().equals(Question.QUESTION_YESNO)) {
+					if (question.questionType().equals(Question.QUESTION_AGREEREFUSE)) {
+						AgreeRefuseDialog dlg = new AgreeRefuseDialog(_mod.getFrame(), _coinTitle, question);
+						final AgreeRefuseDialog myDlg = dlg;
+						final Question myQuestion = question;
+						dlg.addWindowListener(new WindowAdapter() {
+							public void windowDeactivated(WindowEvent e) {
+								if (myDlg.reply.length() > 0) {
+									myQuestion.setReply(myDlg.reply);
+									self.RunScript(myQuestion);
+								}
+							}
+						});
+						dlg.setVisible(true);
+					} else if (question.questionType().equals(Question.QUESTION_YESNO)) {
 						YesNoDialog dlg = new YesNoDialog(_mod.getFrame(), _coinTitle, question);
 						final YesNoDialog myDlg = dlg;
 						final Question myQuestion = question;
@@ -155,13 +168,13 @@ public class BotScriptEngine {
 			return;
 		}
 		
-		String jsonData = reply.jsonData();
-		if (jsonData == null || jsonData.trim().length() <= 0) {
-			WriteLine(" - ERROR: did not get or unable to read valid gamestate from bot script; Abort", "*");
-			return;
-		}
+//		String jsonData = reply.jsonData();
+//		if (jsonData == null || jsonData.trim().length() <= 0) {
+//			WriteLine(" - ERROR: did not get or unable to read valid gamestate from bot script; Abort", "*");
+//			return;
+//		}
 		
-		RunJS(reply.jsonData(), reply.askingFaction(), reply);
+		RunJS("", "vassal:question", reply);
 	}
 	
 	private void RunJS(String jsonString, String action, Question reply) {
@@ -171,15 +184,19 @@ public class BotScriptEngine {
 		
 		// write temp JSON file with gamestate
 		
-		File temp;
-		try {
-			temp = File.createTempFile("coinbot-", ".json");
-			FileWriter fw = new FileWriter(temp);
-			fw.write(jsonString);
-			fw.close();
-		} catch (IOException ex) {
-			WriteLine(" - ERROR trying to write JSON temp file in RunJS(); Abort", "*");
-			return;
+		File temp = null;
+		String tempAbsolutePath = "";
+		if (!jsonString.isEmpty()) {
+			try {
+				temp = File.createTempFile("coinbot-", ".json");
+				FileWriter fw = new FileWriter(temp);
+				fw.write(jsonString);
+				fw.close();
+				tempAbsolutePath = temp.getAbsolutePath();
+			} catch (IOException ex) {
+				WriteLine(" - ERROR trying to write JSON temp file in RunJS(); Abort", "*");
+				return;
+			}
 		}
 		
 		// run the bot script JS
@@ -187,9 +204,9 @@ public class BotScriptEngine {
 		final ProcessWithTimeout pwt;
 		final Process p;
 		try {
-			if (_botPackage.verboseOutput) WriteLine(" - <GAMESTATE> - " + temp.getAbsolutePath(), "-", true);
+			if (_botPackage.verboseOutput) WriteLine(" - <GAMESTATE> - " + tempAbsolutePath, "-", true);
 			
-			p = Runtime.getRuntime().exec(new String[] { _botPackage.nodeProcess, _botPackage.mainEntry, "\"" + temp.getAbsolutePath() + "\"", reply == null ? "" : reply.toJSONReply() }, new String[] {}, new File(_botPackage.basePath));
+			p = Runtime.getRuntime().exec(new String[] { _botPackage.nodeProcess, _botPackage.mainEntry, "\"" + tempAbsolutePath + "\"", reply == null ? "" : reply.toJSONReply() }, new String[] {}, new File(_botPackage.basePath));
 			pwt = new ProcessWithTimeout(p);
 
 			InputStream stdout = p.getInputStream();
@@ -200,7 +217,7 @@ public class BotScriptEngine {
 			InputStreamReader errin = new InputStreamReader(stderr);
 			BufferedReader errreader = new BufferedReader(errin);
 
-			int exitVal = pwt.waitForProcess(6000);
+			int exitVal = pwt.waitForProcess(12000);
 
 			p.getOutputStream().close();
 
@@ -253,6 +270,10 @@ public class BotScriptEngine {
 			WriteLine(line, " ");
 		} else if (line.startsWith("Q*")) {
 			// this is a question
+			if (_botPackage.verboseOutput) {
+				WriteLine(" - <CONSOLE> - " + line, "-", true);
+			}
+			
 			JSONObject jsonObject = null;
 			try {
 				JSONParser parser = new JSONParser();

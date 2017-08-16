@@ -11,6 +11,7 @@ import org.apache.commons.lang.NullArgumentException;
 import org.json.simple.JSONObject;
 
 public class Question {
+	public static final String QUESTION_AGREEREFUSE = "agreerefuse";
 	public static final String QUESTION_YESNO = "yesno";
 	public static final String QUESTION_SINGLECHOICE = "single";
 	public static final String QUESTION_MULTIPLECHOICE = "multi";
@@ -25,6 +26,7 @@ public class Question {
 	private String _reply;
 	private String _options;
 	private String _jsonString;
+	private String _interactionData;
 	
 	public Question(JSONObject jsonObject, String gamedata) {
 		if (jsonObject == null) throw new NullArgumentException("jsonObject");
@@ -38,6 +40,7 @@ public class Question {
 		_category = (jsonObject.containsKey("category")) ? jsonObject.get("category").toString() : "";
 		_datafile = (jsonObject.containsKey("datafile")) ? jsonObject.get("datafile").toString() : "";
 		_options = (jsonObject.containsKey("options")) ? jsonObject.get("options").toString() : "";
+		_interactionData = (jsonObject.containsKey("interaction")) ? jsonObject.get("interaction").toString() : "";
 		
 		if (_datafile.length() == 0 && gamedata != null && gamedata.length() > 0)
 			_datafile = gamedata;
@@ -112,6 +115,8 @@ public class Question {
 		json.put("respondingFactionId", _answeringFaction);
 		json.put("options", options());
 		json.put("reply", reply());
+		json.put("datafile", _datafile);
+		json.put("interaction", _interactionData);
 		return json.toJSONString();
 	}
 	
